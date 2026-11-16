@@ -12,6 +12,7 @@ API REST desenvolvida com Spring Boot para administrar um catálogo de games ind
 - [Tecnologias](#tecnologias)
 - [Requisitos](#requisitos)
 - [Como executar](#como-executar)
+- [Front-end](#front-end)
 - [Documentação Swagger](#documentação-swagger)
 - [Autenticação e headers](#autenticação-e-headers)
 - [Versionamento](#versionamento)
@@ -36,6 +37,7 @@ API REST desenvolvida com Spring Boot para administrar um catálogo de games ind
 - Validação de campos com Bean Validation, nos DTOs e nas entidades.
 - Tratamento global de erros, com respostas em um formato único e mensagens em português.
 - Dados de exemplo criados automaticamente ao iniciar, incluindo um usuário de teste.
+- Front-end completo para o usuário em `/`, com todas as operações da API: catálogo, filtros, cadastro, edição, exclusão, login e conta.
 - Documentação com OpenAPI e Swagger UI, guia de uso e termos de serviço.
 
 ## Tecnologias
@@ -106,18 +108,58 @@ A porta pode ser trocada pela variável de ambiente `PORT`.
 
 Os front-ends que podem chamar a API pelo navegador ficam em `app.cors.allowed-origins`, no `application.properties`, separados por vírgula. Por padrão: `http://localhost:3000`, `http://localhost:5173` e `http://localhost:8080`.
 
+## Front-end
+
+Com a aplicação em execução, acesse [http://localhost:8080/](http://localhost:8080/). O front-end fica dentro do próprio projeto, em `src/main/resources/static/`, e é servido pelo Spring Boot junto com a API. Não precisa de instalação nem de etapa de build.
+
+| Tela | Endereço | O que dá para fazer |
+|---|---|---|
+| Início | `/#/` | Visão geral, números do catálogo e games adicionados recentemente |
+| Games | `/#/games` | Listar, buscar por nome, filtrar por status, categoria, desenvolvedor ou plataforma, ordenar, paginar e cadastrar (com conquistas) |
+| Detalhe do game | `/#/games/{id}` | Ver todos os dados, os links HATEOAS e as respostas JSON da v1 e da v2; editar e excluir |
+| Categorias | `/#/categorias` | Listar com a quantidade de games, buscar, cadastrar, editar, excluir e ver os games da categoria |
+| Desenvolvedores | `/#/desenvolvedores` | Listar, buscar, cadastrar, editar, excluir e ver os games do desenvolvedor |
+| Plataformas | `/#/plataformas` | Listar, buscar, cadastrar, editar, excluir e ver os games da plataforma |
+| Usuários | `/#/usuarios` | Listar, buscar, cadastrar (com gerador de dados fictícios), editar, excluir e ver o perfil |
+| Perfis | `/#/perfis` | Listar, buscar pela bio, cadastrar perfil avulso, editar e excluir |
+| Minha conta | `/#/conta` | Entrar, criar conta, ver e editar os próprios dados, copiar a chave X-API-Key, sair e excluir a conta |
+
+O front-end cuida sozinho dos headers da API:
+- gera uma `X-Idempotency-Key` nova para cada formulário de cadastro (reenviar o mesmo formulário não duplica o registro);
+- envia a `X-API-Key` nas alterações e exclusões e, se o usuário não estiver logado ou a chave expirar, abre a janela de login e repete a ação;
+- mostra as mensagens de erro da API em português, junto do campo que causou o erro;
+- avisa com contagem regressiva quando o limite de 20 requisições por minuto é atingido (429).
+
+Estrutura dos arquivos:
+
+```text
+src/main/resources/static/
+├── index.html          # página "/" (cabeçalho, menu e rodapé)
+├── app/
+│   ├── main.js         # roteador das telas (endereços com #)
+│   ├── api.js          # chamadas à API, headers, login e cache
+│   ├── ui.js           # componentes: formulários, janelas, avisos, paginação
+│   ├── fictional.js    # gerador de dados fictícios
+│   ├── styles.css      # tema visual
+│   └── pages/          # uma tela por arquivo
+├── swagger-ui/index.html
+├── guia.html, guia.md, termos.html, pages.css
+└── img/logo.svg
+```
+
 ## Documentação Swagger
 
 Com a aplicação em execução, acesse:
 
-- Swagger com o tema do projeto: [http://localhost:8080/swagger.html](http://localhost:8080/swagger.html)
-- Swagger UI padrão: [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- Swagger UI (com o tema do projeto): [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 - Especificação OpenAPI em JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 - Guia de uso (exemplos e lista de erros): [http://localhost:8080/guia.html](http://localhost:8080/guia.html)
 - Termos de Serviço: [http://localhost:8080/termos.html](http://localhost:8080/termos.html)
-- Página inicial (painel): [http://localhost:8080/](http://localhost:8080/)
+- Front-end do usuário: [http://localhost:8080/](http://localhost:8080/)
 
-No Swagger, expanda um grupo, clique em **Try it out**, preencha os parâmetros, os headers e o corpo JSON quando necessário e clique em **Execute**. Os IDs dos registros são números inteiros.
+No Swagger, abra uma seção, escolha um endpoint, clique em **Testar**, preencha os parâmetros, os headers e o corpo JSON quando necessário e clique em **Executar**. Os IDs dos registros são números inteiros.
+
+A página do Swagger usa o tema do projeto. O arquivo fica em `src/main/resources/static/swagger-ui/index.html` e é entregue no endereço padrão pelo `SwaggerPageController`; os arquivos do Swagger UI (CSS e JavaScript) continuam vindo do springdoc. O texto completo do guia fica em `src/main/resources/static/guia.md`.
 
 > Use sempre **dados fictícios** nos testes (ex.: nome `Jogador Pixel` e e-mail `jogador.pixel@exemplo.com`). Não cadastre nome, e-mail ou senha reais.
 

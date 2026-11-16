@@ -1,9 +1,9 @@
 # Indie Games API — mapa do projeto
 
 Com a API rodando:
-- **Página inicial:** http://localhost:8080/
-- **Swagger com o tema do projeto:** http://localhost:8080/swagger.html (o padrão continua em `/swagger-ui/index.html`)
-- **Guia de uso** (exemplos, erros e regras): http://localhost:8080/guia.html (o mesmo texto aparece no topo do Swagger)
+- **Front-end do usuário:** http://localhost:8080/ (catálogo, cadastros, edição, exclusão, login e conta)
+- **Swagger (com o tema do projeto):** http://localhost:8080/swagger-ui/index.html
+- **Guia de uso** (exemplos, erros e regras): http://localhost:8080/guia.html
 - **Termos de Serviço:** http://localhost:8080/termos.html
 - **Console do H2:** http://localhost:8080/h2-console (JDBC `jdbc:h2:mem:indiegames`, usuário `sa`, sem senha)
 
@@ -24,4 +24,5 @@ Usuário de teste: **admin@indiegames.com / admin123**
 | CORS | `config/CorsConfig` + `app.cors.allowed-origins` |
 | Versionamento (URL) | `/api/{recurso}/v1` e `/api/category/v2`, `/api/game/v2` |
 | Tratamento de erros | pasta `exception/` (comentada em detalhes) |
-| Documentação | `config/OpenAPI`, `static/guia.md`, `static/swagger.html`, `static/swagger-custom.css` |
+| Front-end | `static/index.html` + `static/app/` (`main.js`, `api.js`, `ui.js`, `pages/`) |
+| Documentação | `config/OpenAPI` (especificação), `static/swagger-ui/index.html` + `controller/SwaggerPageController` (página do Swagger com o tema), `static/guia.md` (texto do guia), `static/termos.html` |

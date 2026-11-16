@@ -8,11 +8,7 @@ import io.swagger.v3.oas.models.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Configuration
@@ -24,7 +20,8 @@ public class OpenAPI {
                 .info(new Info()
                         .title("Indie Games API")
                         .version(appVersion)
-                        .description(loadGuide())
+                        .description("API REST para gerenciar um catálogo de games indie: desenvolvedores, categorias, plataformas, games, usuários e perfis. " +
+                                "O guia de uso completo, com exemplos e a lista de erros, está em /guia.html.")
                         .termsOfService("/termos.html")
                         .license(new License().name("MIT").url("https://mit-license.org/"))
                         .contact(new Contact()
@@ -45,13 +42,5 @@ public class OpenAPI {
                         new Tag().name("v2 - Categorias").description("Categorias com a quantidade de games (gamesCount). Só consulta."),
                         new Tag().name("v2 - Games").description("Games resumidos e com o total de conquistas (totalAchievements). Consulta, cadastro e alteração.")
                 ));
-    }
-
-    private String loadGuide() {
-        try (InputStream input = new ClassPathResource("static/guia.md").getInputStream()) {
-            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            return "API para gerenciar games indies. Veja o guia em /guia.html";
-        }
     }
 }

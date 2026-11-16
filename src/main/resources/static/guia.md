@@ -1,10 +1,12 @@
 API REST para gerenciar um catálogo de **games indie**: desenvolvedores, categorias, plataformas, games, usuários e perfis.
 
-> 📘 Guia completo também em [/guia.html](/guia.html) · 📜 [Termos de Serviço](/termos.html) · 🏠 [Página inicial](/)
+> 🎮 [Usar pelo site](/) · 🧪 [Testar no Swagger](/swagger-ui/index.html) · 📜 [Termos de Serviço](/termos.html)
 
 ---
 
 ## 🚀 Primeiros passos
+
+> 🎮 **Prefere uma interface?** A página inicial ([/](/)) faz tudo isto por você: cadastro, login, alterações e exclusões, com os headers enviados automaticamente.
 
 1. **Crie um usuário com dados fictícios** em `POST /api/user/v1`. Use um nome inventado (ex.: `Jogador Pixel`) e um e-mail de exemplo (ex.: `jogador.pixel@exemplo.com`). **Não use seu nome, e-mail ou senha reais**: esta é uma API de estudo, os dados ficam visíveis no banco e somem ao reiniciar.
 2. **Faça login** em `POST /api/auth/login` com o e-mail e a senha que você cadastrou. A resposta traz uma `apiKey`.
@@ -12,6 +14,10 @@ API REST para gerenciar um catálogo de **games indie**: desenvolvedores, catego
 4. Em todo **cadastro (POST)**, envie o header `X-Idempotency-Key` com um valor único (ex.: um UUID novo).
 
 > 💡 Já existe um usuário de teste: **admin@indiegames.com** / **admin123**.
+
+### Testando pelo Swagger
+
+Abra [/swagger-ui/index.html](/swagger-ui/index.html), abra uma seção (ex.: **v1 - Categorias**), escolha um endpoint e clique em **Testar**. Preencha os parâmetros, os headers (`X-Idempotency-Key` nos POST, `X-API-Key` nos PUT e DELETE) e o corpo JSON, e clique em **Executar**. A resposta aparece logo abaixo, com o status e o corpo.
 
 ---
 
