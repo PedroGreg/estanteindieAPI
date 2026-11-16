@@ -74,7 +74,7 @@ async function renderLogged(root, ctx) {
         <div class="page-header">
             <div>
                 <h1 class="page-title">Olá, ${esc(user.name)}</h1>
-                <p class="page-subtitle">Você está logado e pode alterar e excluir registros.</p>
+                <p class="page-subtitle">Você está logado e pode alterar e excluir registros. Contas e perfis: cada pessoa só altera os próprios.</p>
             </div>
             <div class="actions">
                 <button class="btn btn-secondary" data-edit>Editar meus dados</button>

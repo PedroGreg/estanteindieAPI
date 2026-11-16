@@ -17,8 +17,8 @@ const routes = [
     { pattern: /^\/categorias$/, nav: 'categorias', title: 'Categorias', render: (root, ctx) => renderEntities(root, ctx, 'categorias') },
     { pattern: /^\/desenvolvedores$/, nav: 'desenvolvedores', title: 'Desenvolvedores', render: (root, ctx) => renderEntities(root, ctx, 'desenvolvedores') },
     { pattern: /^\/plataformas$/, nav: 'plataformas', title: 'Plataformas', render: (root, ctx) => renderEntities(root, ctx, 'plataformas') },
-    { pattern: /^\/usuarios$/, nav: 'usuarios', title: 'Usuários', render: renderUsers },
-    { pattern: /^\/perfis$/, nav: 'perfis', title: 'Perfis', render: renderProfiles },
+    { pattern: /^\/usuarios$/, nav: 'usuarios', title: 'Usuários', render: renderUsers, hidden: true },
+    { pattern: /^\/perfis$/, nav: 'perfis', title: 'Perfis', render: renderProfiles, hidden: true },
     { pattern: /^\/conta$/, nav: 'conta', title: 'Minha conta', render: renderAccount }
 ];
 
@@ -57,7 +57,7 @@ async function render() {
     const currentId = ++navigationId;
     document.body.classList.remove('nav-open');
 
-    if (!route) {
+    if (!route || route.hidden) {
         setActiveNav('');
         document.title = 'Página não encontrada · Indie Games';
         view.innerHTML = `<section class="page"><div class="state"><p class="state-title">Página não encontrada</p>

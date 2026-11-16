@@ -99,7 +99,7 @@ Header: `X-Idempotency-Key: 7c9e6679-7425-40de-944b-e07fc1f90ae7`
 
 - Listar, buscar e ver detalhes de tudo **sem login** (GET é público).
 - Cadastrar (POST) **sem login**, desde que envie a `X-Idempotency-Key`.
-- Alterar (PUT) e deletar (DELETE) **com login** (`X-API-Key`).
+- Alterar (PUT) e deletar (DELETE) **com login** (`X-API-Key`). Games, categorias, desenvolvedores e plataformas podem ser alterados por qualquer usuário logado; **contas e perfis, só pelo próprio dono**.
 - Navegar pela API seguindo os `_links` de cada resposta (HATEOAS): de um game para o desenvolvedor dele, de uma categoria para os games dela, da v1 para a v2...
 - Reenviar um POST com a mesma `X-Idempotency-Key` sem medo de duplicar o registro.
 
@@ -128,11 +128,13 @@ Todos os erros vêm no mesmo formato:
 | **401** | PUT ou DELETE **sem** `X-API-Key` | Faça login e envie a chave |
 | **401** | Chave antiga: depois de um **novo login** ou de um **logout**, a chave anterior deixa de valer | Use a chave do último login |
 | **401** | Login com e-mail ou senha errados | Confira os dados |
+| **403** | Alterar ou excluir a conta de **outro** usuário | Cada usuário só altera e exclui a própria conta |
+| **403** | Alterar ou excluir o perfil de **outro** usuário, ou um perfil avulso (sem dono) | Cada usuário só altera o próprio perfil |
 | **404** | ID que não existe (inclusive `developerId`, `categoryId` ou algum `platformIds` de um game) | Consulte a listagem e use um ID existente |
 | **404** | Rota que não existe ou sem a versão (ex.: `/api/category` sem `/v1`) | Use `/v1` ou `/v2` |
 | **405** | Método que a rota não tem (ex.: `DELETE /api/category/v2/1`) | Para alterar e deletar categorias, use a v1 |
 | **409** | Deletar categoria, desenvolvedor ou plataforma que ainda tem games | Delete ou altere os games antes |
-| **409** | Deletar um perfil que pertence a um usuário | Delete o usuário (o perfil vai junto) |
+| **409** | Deletar o seu próprio perfil (ele pertence à sua conta) | Exclua a sua conta: o perfil vai junto |
 | **415** | Corpo enviado sem `Content-Type: application/json` | Envie o header |
 | **429** | Mais de **20 requisições por minuto** do mesmo IP | Espere os segundos do header `Retry-After` |
 | **500** | Erro inesperado no servidor | Tente de novo; se continuar, verifique o log |
@@ -142,6 +144,7 @@ Todos os erros vêm no mesmo formato:
 - ⚠️ A mesma chave de idempotência usada na v1 e na v2 de games conta como chaves separadas.
 - ⚠️ O banco é **em memória (H2)**: ao reiniciar a API, **tudo volta aos dados de exemplo** e as chaves de login e de idempotência são apagadas.
 - ⚠️ Cada usuário tem **uma** chave de API por vez: um novo login invalida a anterior.
+- ⚠️ Contas e perfis são pessoais: com a sua chave você só altera e exclui a **sua** conta e o **seu** perfil.
 - ⚠️ Num PUT, o corpo é validado **antes** da chave: um PUT com corpo inválido recebe **400** mesmo sem `X-API-Key`. Com o corpo válido e sem chave, a resposta é **401**.
 - ⚠️ Não há DELETE em cascata: apagar um registro em uso dá **409**.
 - ⚠️ Use sempre **dados fictícios**. Nunca cadastre seu nome, e-mail ou senha reais.

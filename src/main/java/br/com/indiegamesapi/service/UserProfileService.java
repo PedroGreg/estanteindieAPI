@@ -1,6 +1,7 @@
 package br.com.indiegamesapi.service;
 
 import br.com.indiegamesapi.dto.request.UserProfileRequestDTO;
+import br.com.indiegamesapi.exception.ForbiddenException;
 import br.com.indiegamesapi.exception.NotFoundException;
 import br.com.indiegamesapi.model.UserProfile;
 import br.com.indiegamesapi.repository.UserProfileRepository;
@@ -41,17 +42,25 @@ public class UserProfileService {
     }
 
     @Transactional
-    public UserProfile update(Long id, UserProfileRequestDTO dto){
+    public UserProfile update(Long id, UserProfileRequestDTO dto, Long currentUserId){
         UserProfile updateUserProfile = findById(id);
+        checkOwner(updateUserProfile, currentUserId);
         updateUserProfile.setBio(dto.bio());
         updateUserProfile.setUpdatedAt(LocalDateTime.now());
         return updateUserProfile;
     }
 
     @Transactional
-    public void delete(Long id){
+    public void delete(Long id, Long currentUserId){
         UserProfile userProfile = findById(id);
+        checkOwner(userProfile, currentUserId);
         repository.delete(userProfile);
         repository.flush();
+    }
+
+    private void checkOwner(UserProfile userProfile, Long currentUserId){
+        if (userProfile.getUser() == null || !userProfile.getUser().getId().equals(currentUserId)) {
+            throw new ForbiddenException("Você só pode alterar ou excluir o seu próprio perfil");
+        }
     }
 }

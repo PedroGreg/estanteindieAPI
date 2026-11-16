@@ -114,12 +114,10 @@ async function showProfile(user) {
                 <div class="detail-item" style="grid-column:1/-1"><dt>Bio</dt><dd>${esc(profile.bio || 'Sem bio')}</dd></div>
             </dl>
             <div class="form-actions" style="margin-top:18px">
-                <a class="btn btn-ghost" href="#/perfis">Ver todos os perfis</a>
                 <button class="btn btn-primary" data-ok>Fechar</button>
             </div>`
         });
         modal.element.querySelector('[data-ok]').addEventListener('click', modal.close);
-        modal.element.querySelector('a').addEventListener('click', modal.close);
     } catch (error) {
         showError(error);
     }
@@ -133,7 +131,7 @@ export async function renderUsers(root, ctx) {
         <div class="page-header">
             <div>
                 <h1 class="page-title">Usuários</h1>
-                <p class="page-subtitle">Pessoas cadastradas na plataforma. Cada usuário tem um perfil com bio; a senha nunca é exibida.</p>
+                <p class="page-subtitle">Pessoas cadastradas na plataforma. Cada usuário tem um perfil com bio; a senha nunca é exibida. Você só pode alterar ou excluir a sua própria conta.</p>
             </div>
             <button class="btn btn-primary" data-new>+ Novo usuário</button>
         </div>
@@ -178,8 +176,9 @@ export async function renderUsers(root, ctx) {
                         <td>${formatDate(user.createdAt)}</td>
                         <td><div class="actions">
                             <button class="btn btn-ghost btn-sm" data-profile="${index}">Perfil</button>
+                            ${auth.user && auth.user.id === user.id ? `
                             <button class="btn btn-secondary btn-sm" data-edit="${index}">Editar</button>
-                            <button class="btn btn-danger btn-sm" data-remove="${index}">Excluir</button>
+                            <button class="btn btn-danger btn-sm" data-remove="${index}">Excluir</button>` : ''}
                         </div></td>
                     </tr>`).join('')}</tbody>
                 </table></div>

@@ -101,11 +101,11 @@ public class UserController {
     }
 
     @Operation(summary = "Atualizar usuário",
-            description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
+            description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login. Cada usuário só pode alterar a própria conta.")
     @ApiResponse(responseCode = "200", description = "Usuário atualizado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = UserResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos ou JSON mal formatado (ou email já cadastrado)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "401", description = "X-API-Key ausente ou inválida (faça login em POST /api/auth/login)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
-    @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
+    @ApiResponse(responseCode = "403", description = "A chave é válida, mas você só pode alterar a sua própria conta", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))    @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<UserResponseDTO>> update(
@@ -115,23 +115,23 @@ public class UserController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Dados atualizados do usuário", required = true,
                     content = @Content(schema = @Schema(implementation = UserRequestDTO.class)))
             @RequestBody @Valid UserRequestDTO dto){
-        authService.validate(apiKey);
-        return ResponseEntity.ok(assembler.toDtoModel(service.update(id, dto)));
+        Long currentUserId = authService.validate(apiKey).getId();
+        return ResponseEntity.ok(assembler.toDtoModel(service.update(id, dto, currentUserId)));
     }
 
     @Operation(summary = "Deletar usuário",
-            description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
+            description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login. Cada usuário só pode excluir a própria conta (o perfil é apagado junto).")
     @ApiResponse(responseCode = "204", description = "Usuário deletado", content = @Content)
     @ApiResponse(responseCode = "401", description = "X-API-Key ausente ou inválida (faça login em POST /api/auth/login)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
-    @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
+    @ApiResponse(responseCode = "403", description = "A chave é válida, mas você só pode excluir a sua própria conta", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))    @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @Parameter(description = "ID do usuário", example = "1") @PathVariable Long id,
             @Parameter(description = "Chave obtida em POST /api/auth/login")
             @RequestHeader(value = "X-API-Key", required = false) String apiKey) {
-        authService.validate(apiKey);
-        service.delete(id);
+        Long currentUserId = authService.validate(apiKey).getId();
+        service.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 }

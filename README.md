@@ -120,9 +120,11 @@ Com a aplicação em execução, acesse [http://localhost:8080/](http://localhos
 | Categorias | `/#/categorias` | Listar com a quantidade de games, buscar, cadastrar, editar, excluir e ver os games da categoria |
 | Desenvolvedores | `/#/desenvolvedores` | Listar, buscar, cadastrar, editar, excluir e ver os games do desenvolvedor |
 | Plataformas | `/#/plataformas` | Listar, buscar, cadastrar, editar, excluir e ver os games da plataforma |
-| Usuários | `/#/usuarios` | Listar, buscar, cadastrar (com gerador de dados fictícios), editar, excluir e ver o perfil |
-| Perfis | `/#/perfis` | Listar, buscar pela bio, cadastrar perfil avulso, editar e excluir |
+| Usuários _(oculta)_ | `/#/usuarios` | Listar, buscar, cadastrar, editar e excluir a própria conta e ver o perfil |
+| Perfis _(oculta)_ | `/#/perfis` | Listar, buscar pela bio, cadastrar perfil avulso, editar e excluir o próprio perfil |
 | Minha conta | `/#/conta` | Entrar, criar conta, ver e editar os próprios dados, copiar a chave X-API-Key, sair e excluir a conta |
+
+As telas de **Usuários** e **Perfis** estão ocultas: os links não aparecem no menu e os endereços mostram "página não encontrada". O código continua em `pages/users.js` e `pages/profiles.js`; para reativar, remova o atributo `hidden` dos links no `index.html` e o `hidden: true` das rotas no `app/main.js`. O cadastro de conta e a edição dos próprios dados continuam disponíveis em **Minha conta**.
 
 O front-end cuida sozinho dos headers da API:
 - gera uma `X-Idempotency-Key` nova para cada formulário de cadastro (reenviar o mesmo formulário não duplica o registro);
@@ -151,7 +153,7 @@ src/main/resources/static/
 
 Com a aplicação em execução, acesse:
 
-- Swagger UI (com o tema do projeto): [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- Swagger UI (visual padrão, com o cabeçalho e o logo do projeto): [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 - Especificação OpenAPI em JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 - Guia de uso (exemplos e lista de erros): [http://localhost:8080/guia.html](http://localhost:8080/guia.html)
 - Termos de Serviço: [http://localhost:8080/termos.html](http://localhost:8080/termos.html)
@@ -159,7 +161,7 @@ Com a aplicação em execução, acesse:
 
 No Swagger, abra uma seção, escolha um endpoint, clique em **Testar**, preencha os parâmetros, os headers e o corpo JSON quando necessário e clique em **Executar**. Os IDs dos registros são números inteiros.
 
-A página do Swagger usa o tema do projeto. O arquivo fica em `src/main/resources/static/swagger-ui/index.html` e é entregue no endereço padrão pelo `SwaggerPageController`; os arquivos do Swagger UI (CSS e JavaScript) continuam vindo do springdoc. O texto completo do guia fica em `src/main/resources/static/guia.md`.
+A página do Swagger mantém o visual padrão do Swagger UI, com o cabeçalho e o logo do projeto no topo. O arquivo fica em `src/main/resources/static/swagger-ui/index.html` e é entregue no endereço padrão pelo `SwaggerPageController`; os arquivos do Swagger UI (CSS e JavaScript) continuam vindo do springdoc. O texto completo do guia fica em `src/main/resources/static/guia.md`.
 
 > Use sempre **dados fictícios** nos testes (ex.: nome `Jogador Pixel` e e-mail `jogador.pixel@exemplo.com`). Não cadastre nome, e-mail ou senha reais.
 
@@ -172,6 +174,8 @@ A página do Swagger usa o tema do projeto. O arquivo fica em `src/main/resource
 | `Content-Type: application/json` | Em todo POST e PUT com corpo | `415 Unsupported Media Type` |
 
 **Login:** envie e-mail e senha para `POST /api/auth/login`. A resposta traz uma `apiKey`, que deve ir no header `X-API-Key`. Cada usuário tem uma chave por vez: um novo login substitui a anterior, e `POST /api/auth/logout` invalida a chave atual.
+
+**Permissões:** qualquer usuário logado pode alterar e excluir games, categorias, desenvolvedores e plataformas. Contas e perfis são pessoais: cada usuário só altera e exclui a própria conta e o próprio perfil; nos dos outros (e em perfis avulsos), a resposta é `403 Forbidden`.
 
 **Idempotência:** envie um valor único (por exemplo, um UUID) em `X-Idempotency-Key` a cada cadastro. Se o mesmo POST for reenviado com a mesma chave, a API não cria outro registro: devolve o já criado, com `200 OK`. Use uma chave nova para cada cadastro novo.
 
@@ -331,9 +335,10 @@ Campos obrigatórios e regras de formato são validados pela API. Todos os erros
 - `204 No Content`: remoção ou logout executado com sucesso.
 - `400 Bad Request`: dados inválidos, JSON mal formatado, e-mail já cadastrado, ID não numérico, parâmetro de busca ausente ou header `X-Idempotency-Key` ausente.
 - `401 Unauthorized`: PUT ou DELETE sem `X-API-Key` válida, ou login com e-mail ou senha incorretos.
+- `403 Forbidden`: chave válida, mas tentando alterar ou excluir a conta ou o perfil de outro usuário (ou um perfil avulso).
 - `404 Not Found`: registro ou rota inexistente, inclusive `developerId`, `categoryId` ou `platformIds` de um game.
 - `405 Method Not Allowed`: método não disponível na rota (ex.: `DELETE /api/category/v2/{id}`).
-- `409 Conflict`: remoção de um registro em uso (ex.: categoria, desenvolvedor ou plataforma que ainda têm games, ou perfil vinculado a um usuário).
+- `409 Conflict`: remoção de um registro em uso (ex.: categoria, desenvolvedor ou plataforma que ainda têm games, ou o próprio perfil, que pertence à conta).
 - `415 Unsupported Media Type`: corpo enviado sem `Content-Type: application/json`.
 - `429 Too Many Requests`: mais de 20 requisições por minuto do mesmo IP; o header `Retry-After` informa quantos segundos esperar.
 - `500 Internal Server Error`: erro inesperado no servidor.

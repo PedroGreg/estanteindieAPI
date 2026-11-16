@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 //
 // AS DUAS FAMÍLIAS DE ERRO
 // ------------------------
-//   A) Erros NOSSOS (NotFoundException, BadRequestException, UnauthorizedException) e alguns de bibliotecas
+//   A) Erros NOSSOS (NotFoundException, BadRequestException, UnauthorizedException, ForbiddenException) e alguns de bibliotecas
 //      (validação da entidade, violação do banco): cada um tem o seu método @ExceptionHandler logo abaixo.
 //   B) Erros PADRÃO do Spring MVC (JSON inválido, @Valid falhou, header ou parâmetro faltando, ID não numérico,
 //      método não suportado, rota inexistente...). Esses o Spring já sabe tratar, através da classe
@@ -91,6 +91,14 @@ public class ExceptionHandlerModel extends ResponseEntityExceptionHandler {
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ExceptionResponseModel> unauthorized(WebRequest request, Exception e){
         return build(HttpStatus.UNAUTHORIZED, e.getMessage(), request);
+    }
+
+    // 403: a chave é válida, mas a ação não é permitida para este usuário.
+    // Ex.: tentar alterar ou excluir a conta (ou o perfil) de outra pessoa. A mensagem vem do service
+    // ("Você só pode alterar ou excluir a sua própria conta"), igual às outras exceções da família A.
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ExceptionResponseModel> forbidden(WebRequest request, Exception e){
+        return build(HttpStatus.FORBIDDEN, e.getMessage(), request);
     }
 
     // 400: a validação da ENTIDADE falhou.

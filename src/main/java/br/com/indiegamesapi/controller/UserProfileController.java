@@ -101,11 +101,11 @@ public class UserProfileController {
     }
 
     @Operation(summary = "Atualizar perfil de usuário",
-            description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
+            description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login. Cada usuário só pode alterar o próprio perfil; perfis avulsos não têm dono e não podem ser alterados.")
     @ApiResponse(responseCode = "200", description = "Perfil de usuário atualizado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = UserProfileResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos ou JSON mal formatado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "401", description = "X-API-Key ausente ou inválida (faça login em POST /api/auth/login)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
-    @ApiResponse(responseCode = "404", description = "Perfil de usuário não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
+    @ApiResponse(responseCode = "403", description = "A chave é válida, mas você só pode alterar o seu próprio perfil", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))    @ApiResponse(responseCode = "404", description = "Perfil de usuário não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @PutMapping("/{id}")
     public ResponseEntity<EntityModel<UserProfileResponseDTO>> update(
@@ -115,15 +115,15 @@ public class UserProfileController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Dados atualizados do perfil de usuário", required = true,
                     content = @Content(schema = @Schema(implementation = UserProfileRequestDTO.class)))
             @RequestBody @Valid UserProfileRequestDTO dto){
-        authService.validate(apiKey);
-        return ResponseEntity.ok(assembler.toDtoModel(service.update(id, dto)));
+        Long currentUserId = authService.validate(apiKey).getId();
+        return ResponseEntity.ok(assembler.toDtoModel(service.update(id, dto, currentUserId)));
     }
 
     @Operation(summary = "Deletar perfil de usuário",
-            description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
+            description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login. Só é possível excluir o próprio perfil, e mesmo assim a API responde 409, porque ele pertence à sua conta: exclua a conta para apagar o perfil.")
     @ApiResponse(responseCode = "204", description = "Perfil de usuário deletado", content = @Content)
     @ApiResponse(responseCode = "401", description = "X-API-Key ausente ou inválida (faça login em POST /api/auth/login)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
-    @ApiResponse(responseCode = "409", description = "Perfil de usuário pertence a um usuário (delete o usuário, que leva o perfil junto) e não pode ser deletado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
+    @ApiResponse(responseCode = "403", description = "A chave é válida, mas você só pode excluir o seu próprio perfil", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))    @ApiResponse(responseCode = "409", description = "Perfil de usuário pertence a um usuário (delete o usuário, que leva o perfil junto) e não pode ser deletado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "Perfil de usuário não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @DeleteMapping("/{id}")
@@ -131,8 +131,8 @@ public class UserProfileController {
             @Parameter(description = "ID do perfil de usuário", example = "1") @PathVariable Long id,
             @Parameter(description = "Chave obtida em POST /api/auth/login")
             @RequestHeader(value = "X-API-Key", required = false) String apiKey) {
-        authService.validate(apiKey);
-        service.delete(id);
+        Long currentUserId = authService.validate(apiKey).getId();
+        service.delete(id, currentUserId);
         return ResponseEntity.noContent().build();
     }
 }

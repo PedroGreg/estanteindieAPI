@@ -2,6 +2,7 @@ package br.com.indiegamesapi.service;
 
 import br.com.indiegamesapi.dto.request.UserRequestDTO;
 import br.com.indiegamesapi.exception.BadRequestException;
+import br.com.indiegamesapi.exception.ForbiddenException;
 import br.com.indiegamesapi.exception.NotFoundException;
 import br.com.indiegamesapi.model.User;
 import br.com.indiegamesapi.model.UserProfile;
@@ -54,8 +55,9 @@ public class UserService {
     }
 
     @Transactional
-    public User update(Long id, UserRequestDTO dto){
+    public User update(Long id, UserRequestDTO dto, Long currentUserId){
         User updateUser = findById(id);
+        checkOwner(updateUser, currentUserId);
         validateEmail(dto.email(), id);
         updateUser.setName(dto.name());
         updateUser.setEmail(dto.email());
@@ -82,9 +84,16 @@ public class UserService {
     }
 
     @Transactional
-    public void delete(Long id){
+    public void delete(Long id, Long currentUserId){
         User user = findById(id);
+        checkOwner(user, currentUserId);
         repository.delete(user);
+    }
+
+    private void checkOwner(User user, Long currentUserId){
+        if (!user.getId().equals(currentUserId)) {
+            throw new ForbiddenException("Você só pode alterar ou excluir a sua própria conta");
+        }
     }
 
     private void validateEmail(String email, Long currentUserId){

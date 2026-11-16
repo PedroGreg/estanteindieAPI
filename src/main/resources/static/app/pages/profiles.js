@@ -1,4 +1,4 @@
-import { api, items, pageInfo, query, newIdempotencyKey } from '../api.js';
+import { api, auth, items, pageInfo, query, newIdempotencyKey } from '../api.js';
 import {
     esc, formatDate, loading, emptyState, errorState, toast, showError,
     formModal, confirmDialog, withLogin, pagination
@@ -16,7 +16,7 @@ export async function renderProfiles(root, ctx) {
         <div class="page-header">
             <div>
                 <h1 class="page-title">Perfis</h1>
-                <p class="page-subtitle">Cada usuário ganha um perfil no cadastro. Aqui você também pode criar perfis avulsos (sem usuário) e buscar pela bio.</p>
+                <p class="page-subtitle">Cada usuário ganha um perfil no cadastro. Aqui você também pode criar perfis avulsos (sem usuário) e buscar pela bio. Você só pode alterar o seu próprio perfil.</p>
             </div>
             <button class="btn btn-primary" data-new>+ Novo perfil avulso</button>
         </div>
@@ -116,8 +116,9 @@ export async function renderProfiles(root, ctx) {
                         <td>${profile.userId ? esc(profile.userName) : '<span class="muted">avulso</span>'}</td>
                         <td>${formatDate(profile.createdAt)}</td>
                         <td><div class="actions">
+                            ${auth.user && auth.user.id === profile.userId ? `
                             <button class="btn btn-secondary btn-sm" data-edit="${index}">Editar</button>
-                            <button class="btn btn-danger btn-sm" data-remove="${index}">Excluir</button>
+                            <button class="btn btn-danger btn-sm" data-remove="${index}">Excluir</button>` : '<span class="muted">—</span>'}
                         </div></td>
                     </tr>`).join('')}</tbody>
                 </table></div>
