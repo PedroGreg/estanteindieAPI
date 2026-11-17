@@ -1,6 +1,7 @@
 package br.com.estanteindie.service;
 
 import br.com.estanteindie.dto.request.UserProfileRequestDTO;
+import br.com.estanteindie.exception.ConflictException;
 import br.com.estanteindie.exception.ForbiddenException;
 import br.com.estanteindie.exception.NotFoundException;
 import br.com.estanteindie.model.UserProfile;
@@ -54,8 +55,7 @@ public class UserProfileService {
     public void delete(Long id, Long currentUserId){
         UserProfile userProfile = findById(id);
         checkOwner(userProfile, currentUserId);
-        repository.delete(userProfile);
-        repository.flush();
+        throw new ConflictException("O perfil pertence à sua conta e não pode ser excluído sozinho. Exclua a conta em DELETE /api/user/v1/{id}: o perfil vai junto");
     }
 
     private void checkOwner(UserProfile userProfile, Long currentUserId){

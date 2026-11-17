@@ -5,12 +5,10 @@ import br.com.estanteindie.repository.CategoryRepository;
 import br.com.estanteindie.repository.DeveloperRepository;
 import br.com.estanteindie.repository.GameRepository;
 import br.com.estanteindie.repository.PlatformRepository;
-import br.com.estanteindie.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,18 +26,13 @@ public class DataSeeder implements CommandLineRunner {
     private final DeveloperRepository developerRepository;
     private final PlatformRepository platformRepository;
     private final GameRepository gameRepository;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(CategoryRepository categoryRepository, DeveloperRepository developerRepository,
-                      PlatformRepository platformRepository, GameRepository gameRepository,
-                      UserRepository userRepository, PasswordEncoder passwordEncoder) {
+                      PlatformRepository platformRepository, GameRepository gameRepository) {
         this.categoryRepository = categoryRepository;
         this.developerRepository = developerRepository;
         this.platformRepository = platformRepository;
         this.gameRepository = gameRepository;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -64,25 +57,7 @@ public class DataSeeder implements CommandLineRunner {
         saveGame(new Game("Hollow Knight", GameStatus.RELEASED, teamCherry, metroidvania, new ArrayList<>(List.of(pc, sw, ps)), now, null), 63);
         saveGame(new Game("Hades", GameStatus.RELEASED, supergiant, roguelike, new ArrayList<>(List.of(pc, sw, ps)), now, null), 49);
 
-        saveUser("Administrador", "admin@estanteindie.com", "admin123", "Conta de testes da API", now);
-        saveUser("Marina Pixel", "marina@estanteindie.com", "senha123", "Fã de metroidvanias e pixel art", now);
-        saveUser("Caio Retrô", "caio@estanteindie.com", "senha123", "Coleciono roguelikes e jogos de ritmo", now);
-
-        log.info("DataSeeder: dados de exemplo criados. Login de teste -> admin@estanteindie.com / admin123 (também marina@ e caio@estanteindie.com / senha123)");
-    }
-
-    private void saveUser(String name, String email, String password, String bio, LocalDateTime now) {
-        User user = new User();
-        user.setName(name);
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setCreatedAt(now);
-        UserProfile profile = new UserProfile();
-        profile.setBio(bio);
-        profile.setCreatedAt(now);
-        profile.setUser(user);
-        user.setUserProfile(profile);
-        userRepository.save(user);
+        log.info("DataSeeder: dados de exemplo criados (games, desenvolvedores, categorias e plataformas)");
     }
 
     private void saveGame(Game game, int totalAchievements) {

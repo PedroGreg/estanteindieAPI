@@ -13,7 +13,7 @@ API REST para gerenciar um catálogo de **games indie**: desenvolvedores, catego
 3. **Use a chave** no header `X-API-Key` sempre que for **alterar (PUT)** ou **deletar (DELETE)** algo.
 4. Em todo **cadastro (POST)**, envie o header `X-Idempotency-Key` com um valor único (ex.: um UUID novo).
 
-> 💡 Já existe um usuário de teste: **admin@estanteindie.com** / **admin123**.
+> 💡 **Nenhum usuário vem cadastrado.** Crie a sua conta (passo 1) antes de testar PUT e DELETE. Para testar a regra de dono, crie duas contas.
 
 ### Testando pelo Swagger
 
@@ -29,7 +29,68 @@ Abra [/swagger-ui/index.html](/swagger-ui/index.html), abra uma seção (ex.: **
 | `X-API-Key` | Em todo **PUT** e **DELETE**, e no logout | **401** – "Esta operação exige login" |
 | `Content-Type: application/json` | Em todo POST e PUT com corpo | **415** – "Content-Type não suportado" |
 
+**Headers que a API devolve**
+
+| Header | Quando aparece | Para que serve |
+|---|---|---|
+| `X-Rate-Limit-Remaining` | Em toda resposta de `/api/...` | Quantas requisições ainda restam no minuto atual (o limite é de **20 por minuto por IP** e vale só para `/api/...`: abrir o site, o Swagger ou este guia não gasta requisições) |
+| `Retry-After` | Na resposta **429** | Quantos segundos esperar antes de tentar de novo |
+
 **Como funciona a idempotência:** se você reenviar um POST com a **mesma** `X-Idempotency-Key`, a API **não cria outro registro**. Ela devolve o registro criado na primeira vez, com status **200** em vez de 201. Use **uma chave nova para cada cadastro novo**.
+
+---
+
+## 📄 Paginação e ordenação
+
+**Todas as listagens são paginadas**: as listas completas (ex.: `GET /api/game/v1`), as buscas (`/search`) e os filtros (ex.: `/api/game/v1/status/RELEASED`). Você controla a página com três parâmetros na URL:
+
+| Parâmetro | O que faz | Padrão | Mínimo | Máximo |
+|---|---|---|---|---|
+| `page` | Número da página. **Começa em 0** (a primeira página é `page=0`) | **0** | **0** | Não tem (uma página depois da última volta com a lista vazia) |
+| `size` | Quantos itens vêm por página | **10** | **1** | **100** |
+| `sort` | Campo e direção da ordenação: `campo,asc` ou `campo,desc` | Sem ordenação (ordem do banco, normalmente a de cadastro) | — | — |
+
+> ⚠️ **Limites de paginação: padrão 10, mínimo 1 e máximo 100 itens por página.**
+> - `size` **acima de 100** não dá erro: a API devolve **100** itens.
+> - `size=0`, negativo ou que não é número volta para o **padrão (10)**.
+> - `page` negativo ou que não é número volta para **0**.
+> - O máximo fica em `app.pagination.max-page-size`, no `application.properties`.
+
+**Exemplos**
+- `GET /api/game/v1?page=0&size=5` — os 5 primeiros games
+- `GET /api/game/v1?page=1&size=5` — do 6º ao 10º game
+- `GET /api/game/v1?sort=name,asc` — em ordem alfabética
+- `GET /api/game/v1?sort=createdAt,desc` — os mais recentes primeiro
+- `GET /api/game/v1?sort=status,asc&sort=name,asc` — vários critérios: repita o `sort`
+- `GET /api/category/v1/search?name=r&page=0&size=2&sort=name,desc` — busca, paginação e ordenação juntas
+
+**Campos que podem ser usados no `sort`** (use o nome em inglês, como aparece no JSON):
+
+| Recurso | Campos |
+|---|---|
+| Categorias, desenvolvedores e plataformas | `id`, `name`, `createdAt`, `updatedAt` |
+| Games | `id`, `name`, `status`, `totalAchievements`, `createdAt`, `updatedAt` |
+| Usuários | `id`, `name`, `email`, `createdAt`, `updatedAt` |
+| Perfis | `id`, `bio`, `createdAt`, `updatedAt` |
+
+> ⚠️ Ordenar por um campo que não existe (ex.: `sort=nome,asc`) devolve **400**. A direção é opcional: sem ela, a ordem é crescente (`asc`).
+
+**O que vem na resposta de uma listagem**
+```json
+{
+  "_embedded": { "games": [ { "id": 1, "name": "Undertale", "...": "..." } ] },
+  "_links": {
+    "first": { "href": "http://localhost:8080/api/game/v1?page=0&size=2" },
+    "self":  { "href": "http://localhost:8080/api/game/v1?page=0&size=2" },
+    "next":  { "href": "http://localhost:8080/api/game/v1?page=1&size=2" },
+    "last":  { "href": "http://localhost:8080/api/game/v1?page=1&size=2" }
+  },
+  "page": { "size": 2, "totalElements": 4, "totalPages": 2, "number": 0 }
+}
+```
+- `page.size`: itens por página · `page.totalElements`: total de registros · `page.totalPages`: total de páginas · `page.number`: página atual (começa em 0).
+- Os links `first`, `prev`, `next` e `last` só aparecem quando fazem sentido (na primeira página não existe `prev`, por exemplo).
+- Quando a lista está vazia, não vem o `_embedded`, só o `page` com `totalElements: 0`.
 
 ---
 
@@ -86,12 +147,58 @@ Header: `X-Idempotency-Key: 7c9e6679-7425-40de-944b-e07fc1f90ae7`
 { "name": "RPG de Ação" }
 ```
 
-**Buscas e filtros**
-- `GET /api/category/v1/search?name=rpg` — por parte do nome (sem diferenciar maiúsculas/minúsculas)
-- `GET /api/game/v1/status/RELEASED` — por status
-- `GET /api/game/v1/developer/1`, `/api/game/v1/category/1`, `/api/game/v1/platform/1` — games de um desenvolvedor, categoria ou plataforma
-- `GET /api/userprofile/v1/search?bio=metroidvania` — perfis pela bio
-- Paginação em todas as listagens: `?page=0&size=10&sort=name,asc`
+**Buscas e filtros** (todas aceitam `page`, `size` e `sort`; veja a seção **Paginação e ordenação**)
+
+As buscas procuram por **parte do texto** e **não diferenciam maiúsculas de minúsculas** (`rpg` encontra "RPG" e "Action RPG").
+
+| Busca | Rota |
+|---|---|
+| Categorias pelo nome | `GET /api/category/v1/search?name=rpg` |
+| Desenvolvedores pelo nome | `GET /api/developer/v1/search?name=team` |
+| Plataformas pelo nome | `GET /api/platform/v1/search?name=switch` |
+| Games pelo nome | `GET /api/game/v1/search?name=knight` |
+| Games por status | `GET /api/game/v1/status/RELEASED` (`DEVELOPMENT`, `EARLY_ACCESS` ou `RELEASED`) |
+| Games de um desenvolvedor | `GET /api/game/v1/developer/1` |
+| Games de uma categoria | `GET /api/game/v1/category/1` |
+| Games de uma plataforma | `GET /api/game/v1/platform/1` |
+| Usuários pelo nome | `GET /api/user/v1/search?name=pixel` |
+| Perfis pela bio | `GET /api/userprofile/v1/search?bio=metroidvania` |
+
+---
+
+## 📏 Regras dos campos
+
+| Recurso | Campo | Regra |
+|---|---|---|
+| Categoria | `name` | Obrigatório, de **3 a 255** caracteres |
+| Desenvolvedor | `name` | Obrigatório, de **2 a 255** caracteres |
+| Plataforma | `name` | Obrigatório, de **2 a 50** caracteres |
+| Game (v1 e v2) | `name` | Obrigatório, até **255** caracteres |
+| Game (v1 e v2) | `status` | Obrigatório: `DEVELOPMENT`, `EARLY_ACCESS` ou `RELEASED` (em maiúsculas) |
+| Game (v1 e v2) | `developerId`, `categoryId` | Obrigatórios; precisam existir (senão, **404**) |
+| Game (v1 e v2) | `platformIds` | Obrigatória, mas **pode ser vazia** (`[]`); os IDs precisam existir e não pode haver `null` na lista |
+| Game (só v2) | `totalAchievements` | Obrigatório, de **0 a 10000** |
+| Usuário | `name` | Obrigatório, de **3 a 255** caracteres |
+| Usuário | `email` | Obrigatório, formato válido, até 255 caracteres e **único** (sem diferenciar maiúsculas: `Pixel@exemplo.com` e `pixel@exemplo.com` são o mesmo e-mail) |
+| Usuário | `password` | De **6 a 255** caracteres. **Obrigatória no cadastro**. No PUT é opcional: para manter a senha atual, **não envie o campo** (ou envie `null`). Enviar `""` dá **400** (menos de 6 caracteres) |
+| Usuário | `bio` | Opcional, até **255** caracteres (vai para o perfil) |
+| Perfil | `bio` | Obrigatória (pode ser `""`), até **255** caracteres |
+| Login | `email`, `password` | Obrigatórios; o `email` precisa ter formato válido |
+
+- O `id`, o `createdAt` e o `updatedAt` são gerados pela API: não precisam ser enviados (e são ignorados se forem).
+- A senha é guardada como hash (BCrypt) e **nunca aparece** nas respostas.
+
+---
+
+## 👤 Contas, perfis e login
+
+- **Nenhum usuário vem cadastrado.** Crie a sua conta em `POST /api/user/v1` (ou em **Minha conta**, no site).
+- Ao criar a conta, a API **cria o perfil junto**, com a `bio` enviada.
+- O login (`POST /api/auth/login`) devolve `apiKey`, `userId`, `name` e `email`. Guarde a `apiKey`.
+- O logout (`POST /api/auth/logout`, com `X-API-Key`) invalida a chave. Um novo login também troca a chave.
+- Excluir a sua conta (`DELETE /api/user/v1/{id}`) apaga o **perfil junto**.
+- O perfil que pertence a uma conta não pode ser excluído sozinho (**409**): exclua a conta.
+- `POST /api/userprofile/v1` cria um **perfil avulso**, sem dono. Como não tem dono, ninguém consegue alterá-lo ou excluí-lo depois (**403**).
 
 ---
 
@@ -118,13 +225,15 @@ Todos os erros vêm no mesmo formato:
 | **400** | Nome de campo errado (ex.: `"naem"` no lugar de `"name"`) | O campo certo fica vazio e a validação reclama; corrija o nome |
 | **400** | Tamanho inválido: categoria com menos de 3 caracteres, plataforma com mais de 50, usuário com menos de 3, senha com menos de 6, bio com mais de 255 | Ajuste o tamanho do texto |
 | **400** | E-mail em formato inválido ou **já cadastrado** | Use outro e-mail (fictício) |
-| **400** | Cadastro de usuário **sem senha** | Envie a `password` |
+| **400** | Cadastro de usuário **sem senha**, ou `password` vazia (`""`) num PUT | No cadastro, envie a `password`; no PUT, tire o campo para manter a senha atual |
 | **400** | `status` diferente de `DEVELOPMENT`, `EARLY_ACCESS` ou `RELEASED` | Use um dos três valores, em maiúsculas |
 | **400** | `totalAchievements` negativo, acima de 10000 ou ausente (v2) | Envie um número de 0 a 10000 |
 | **400** | JSON mal formatado (vírgula sobrando, aspas faltando, texto no lugar de número) | Confira a sintaxe do JSON |
 | **400** | POST sem o header `X-Idempotency-Key` | Envie o header com um valor único |
 | **400** | ID não numérico na URL (ex.: `/api/game/v1/abc`) | Use um número |
 | **400** | Busca sem o parâmetro (ex.: `/search` sem `?name=`) | Envie o parâmetro |
+| **400** | `sort` com um campo que não existe (ex.: `sort=nome,asc`) | Use um dos campos da tabela da seção **Paginação e ordenação** |
+| **400** | Status inválido no filtro (ex.: `/api/game/v1/status/LANCADO`) | Use `DEVELOPMENT`, `EARLY_ACCESS` ou `RELEASED` |
 | **401** | PUT ou DELETE **sem** `X-API-Key` | Faça login e envie a chave |
 | **401** | Chave antiga: depois de um **novo login** ou de um **logout**, a chave anterior deixa de valer | Use a chave do último login |
 | **401** | Login com e-mail ou senha errados | Confira os dados |
@@ -132,7 +241,7 @@ Todos os erros vêm no mesmo formato:
 | **403** | Alterar ou excluir o perfil de **outro** usuário, ou um perfil avulso (sem dono) | Cada usuário só altera o próprio perfil |
 | **404** | ID que não existe (inclusive `developerId`, `categoryId` ou algum `platformIds` de um game) | Consulte a listagem e use um ID existente |
 | **404** | Rota que não existe ou sem a versão (ex.: `/api/category` sem `/v1`) | Use `/v1` ou `/v2` |
-| **405** | Método que a rota não tem (ex.: `DELETE /api/category/v2/1`) | Para alterar e deletar categorias, use a v1 |
+| **405** | Método que a rota não tem (ex.: `DELETE /api/category/v2/1` ou `DELETE /api/game/v2/1`) | A v2 de categorias é só consulta e a v2 de games não tem DELETE: para isso, use a v1 |
 | **409** | Deletar categoria, desenvolvedor ou plataforma que ainda tem games | Delete ou altere os games antes |
 | **409** | Deletar o seu próprio perfil (ele pertence à sua conta) | Exclua a sua conta: o perfil vai junto |
 | **415** | Corpo enviado sem `Content-Type: application/json` | Envie o header |
@@ -142,7 +251,8 @@ Todos os erros vêm no mesmo formato:
 **Cuidados importantes:**
 - ⚠️ **Não reutilize** uma `X-Idempotency-Key` para um cadastro diferente: você vai receber o registro **antigo** (200), e o novo não será criado.
 - ⚠️ A mesma chave de idempotência usada na v1 e na v2 de games conta como chaves separadas.
-- ⚠️ O banco é **em memória (H2)**: ao reiniciar a API, **tudo volta aos dados de exemplo** e as chaves de login e de idempotência são apagadas.
+- ⚠️ O banco é **em memória (H2)**: ao reiniciar a API, **tudo volta aos dados de exemplo**, as contas criadas são apagadas e as chaves de login e de idempotência deixam de valer.
+- ⚠️ No máximo **100 itens por página**: para ver mais, navegue pelas páginas (`page=1`, `page=2`...) ou siga o link `next`.
 - ⚠️ Cada usuário tem **uma** chave de API por vez: um novo login invalida a anterior.
 - ⚠️ Contas e perfis são pessoais: com a sua chave você só altera e exclui a **sua** conta e o **seu** perfil.
 - ⚠️ Num PUT, o corpo é validado **antes** da chave: um PUT com corpo inválido recebe **400** mesmo sem `X-API-Key`. Com o corpo válido e sem chave, a resposta é **401**.

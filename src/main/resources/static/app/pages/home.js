@@ -31,7 +31,7 @@ export async function renderHome(root, ctx) {
             <h2 class="section-title">Como funciona</h2>
             <div class="grid grid-3">
                 <div class="tip tip-green"><h3>Cadastrar</h3><p>Qualquer pessoa pode cadastrar games, categorias, desenvolvedores e plataformas. Cada envio leva uma chave única, então clicar duas vezes não duplica nada.</p></div>
-                <div class="tip tip-amber"><h3>Alterar e excluir</h3><p>Exigem login. Entre com a sua conta (ou com a de teste: admin@estanteindie.com / admin123).</p></div>
+                <div class="tip tip-amber"><h3>Alterar e excluir</h3><p>Exigem login. Crie uma conta com dados fictícios em Minha conta e entre com ela.</p></div>
                 <div class="tip tip-magenta"><h3>Dados fictícios</h3><p>Este é um projeto de estudo: use nomes e e-mails inventados. Os dados são apagados quando a API reinicia.</p></div>
             </div>
         </section>

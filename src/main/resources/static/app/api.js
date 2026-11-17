@@ -158,7 +158,7 @@ export async function lookup(name, { force = false } = {}) {
         return cached.promise;
     }
     const source = lookupSources[name];
-    const promise = api.get(`${source.path}${query({ size: 200, sort: 'name,asc' })}`)
+    const promise = api.get(`${source.path}${query({ size: 100, sort: 'name,asc' })}`)
         .then(page => ({ list: items(page, source.rel), total: pageInfo(page).totalElements }));
     lookupCache.set(name, { time: Date.now(), promise });
     promise.catch(() => lookupCache.delete(name));

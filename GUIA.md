@@ -7,7 +7,7 @@ Com a API rodando:
 - **Termos de Serviço:** http://localhost:8080/termos.html
 - **Console do H2:** http://localhost:8080/h2-console (JDBC `jdbc:h2:mem:estanteindie`, usuário `sa`, sem senha)
 
-Usuários de teste: **admin@estanteindie.com / admin123**, **marina@estanteindie.com / senha123** e **caio@estanteindie.com / senha123**
+Nenhum usuário vem cadastrado: crie uma conta com dados fictícios (`POST /api/user/v1` ou **Minha conta** no site) antes de testar PUT e DELETE.
 
 | Requisito | Onde olhar |
 |---|---|
@@ -17,7 +17,7 @@ Usuários de teste: **admin@estanteindie.com / admin123**, **marina@estanteindie
 | Enum | `GameStatus` |
 | Bean Validation | entidades (`model/`) e `dto/request/` |
 | Consultas personalizadas | `GameRepository`, `UserProfileRepository` (`@Query`) |
-| Paginação + HATEOAS | controllers (`PagedResourcesAssembler`) e `assembler/` |
+| Paginação + HATEOAS | controllers (`PagedResourcesAssembler`, `@PageableDefault(size = 10)`), `config/PaginationConfig` (máximo de 100 por página) e `assembler/` |
 | Idempotência (`X-Idempotency-Key`) | `IdempotencyService` + método `create` dos controllers |
 | Login (`X-API-Key` em PUT e DELETE) | `AuthController`, `AuthService` + métodos `update` e `delete` |
 | Rate limiting | `config/RateLimitFilter` (20 req/min por IP, só em `/api/**`) |

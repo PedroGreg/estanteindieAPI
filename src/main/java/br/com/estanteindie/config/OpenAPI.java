@@ -21,6 +21,7 @@ public class OpenAPI {
                         .title("EstanteIndie API")
                         .version(appVersion)
                         .description("API REST para gerenciar um catálogo de games indie: desenvolvedores, categorias, plataformas, games, usuários e perfis. " +
+                                "Listagens paginadas: page começa em 0; size padrão 10, mínimo 1 e máximo 100; sort no formato campo,asc ou campo,desc. " +
                                 "O guia de uso completo, com exemplos e a lista de erros, está em /guia.html.")
                         .termsOfService("/termos.html")
                         .license(new License().name("MIT").url("https://mit-license.org/"))

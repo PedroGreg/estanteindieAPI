@@ -2,6 +2,8 @@ package br.com.estanteindie.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -101,6 +103,13 @@ public class ExceptionHandlerModel extends ResponseEntityExceptionHandler {
         return build(HttpStatus.FORBIDDEN, e.getMessage(), request);
     }
 
+    // 409: a operação é válida e permitida, mas os dados atuais impedem (ver ConflictException).
+    // Ex.: excluir o próprio perfil, que pertence à conta. A mensagem vem do service e explica o que fazer.
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ExceptionResponseModel> conflictRule(WebRequest request, Exception e){
+        return build(HttpStatus.CONFLICT, e.getMessage(), request);
+    }
+
     // 400: a validação da ENTIDADE falhou.
     // As entidades (model/) têm @NotBlank, @Size etc. O Hibernate confere essas regras logo antes do INSERT/UPDATE
     // e, se alguma falhar, lança ConstraintViolationException. Normalmente o RequestDTO já barrou antes, no @Valid;
@@ -115,6 +124,36 @@ public class ExceptionHandlerModel extends ResponseEntityExceptionHandler {
                 .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
                 .collect(Collectors.joining("; "));
         return build(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    // 400: ordenação por um campo que não existe (ex.: GET /api/game/v1?sort=nome,asc, sendo que o campo é "name").
+    // O parâmetro sort vira um objeto Sort dentro do Pageable, e o Spring Data só descobre que o campo não existe
+    // na hora de montar a consulta. Dependendo do tipo de consulta, o erro chega de um de dois jeitos:
+    //   - PropertyReferenceException: o Spring Data procurou o campo na entidade e não achou
+    //     (getPropertyName() devolve o nome digitado, que usamos na mensagem);
+    //   - InvalidDataAccessApiUsageException: o Spring "embrulhou" o erro da consulta (por exemplo, nas buscas com
+    //     @Query, quando o Hibernate não reconhece o atributo no ORDER BY).
+    // Sem este método, os dois cairiam no "pega-tudo" (Exception.class, mais abaixo) e virariam um 500 genérico,
+    // passando a impressão de que o servidor quebrou. Como o erro é de quem fez a requisição, o status certo é 400.
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ExceptionResponseModel> invalidSortField(WebRequest request, PropertyReferenceException e){
+        return build(HttpStatus.BAD_REQUEST,
+                "sort: não existe o campo '" + e.getPropertyName() + "' para ordenar. Use um campo do recurso, como id, name ou createdAt", request);
+    }
+
+    // Mesmo caso do método acima, quando o erro chega "embrulhado". O texto original vem do Hibernate, em inglês
+    // e com detalhes internos da consulta, então não é devolvido ao cliente.
+    // Esta exceção também pode aparecer por outros usos inválidos da camada de dados. Por isso o método olha a
+    // causa mais específica (getMostSpecificCause): se ela fala de atributo/propriedade não encontrado, é o caso
+    // do sort; senão, devolve uma mensagem 400 genérica, para não culpar o sort por um erro que não é dele.
+    @ExceptionHandler(InvalidDataAccessApiUsageException.class)
+    public ResponseEntity<ExceptionResponseModel> invalidQueryUsage(WebRequest request, InvalidDataAccessApiUsageException e){
+        String cause = String.valueOf(e.getMostSpecificCause().getMessage()).toLowerCase();
+        if (cause.contains("attribute") || cause.contains("property")) {
+            return build(HttpStatus.BAD_REQUEST,
+                    "sort: campo de ordenação inválido. Use um campo do recurso, como id, name ou createdAt", request);
+        }
+        return build(HttpStatus.BAD_REQUEST, "Requisição inválida para esta operação", request);
     }
 
     // 409: o banco recusou a operação por causa de uma regra dele (chave estrangeira ou campo unique).

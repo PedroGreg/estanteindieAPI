@@ -36,7 +36,7 @@ API REST desenvolvida com Spring Boot para administrar um catálogo de games ind
 - CORS liberado apenas para origens configuradas.
 - Validação de campos com Bean Validation, nos DTOs e nas entidades.
 - Tratamento global de erros, com respostas em um formato único e mensagens em português.
-- Dados de exemplo criados automaticamente ao iniciar, incluindo um usuário de teste.
+- Dados de exemplo criados automaticamente ao iniciar (games, desenvolvedores, categorias e plataformas).
 - Front-end completo para o usuário em `/`, com todas as operações da API: catálogo, filtros, cadastro, edição, exclusão, login e conta.
 - Documentação com OpenAPI e Swagger UI, guia de uso e termos de serviço.
 
@@ -77,15 +77,7 @@ Na raiz do projeto, execute:
 ./mvnw spring-boot:run
 ```
 
-A aplicação sobe em `http://localhost:8080` com um banco H2 em memória. Os dados são temporários e são apagados quando a aplicação é encerrada. A cada inicialização, a API cria dados de exemplo e três usuários de teste:
-
-| Nome | E-mail | Senha |
-|---|---|---|
-| Administrador | `admin@estanteindie.com` | `admin123` |
-| Marina Pixel | `marina@estanteindie.com` | `senha123` |
-| Caio Retrô | `caio@estanteindie.com` | `senha123` |
-
-Com mais de um usuário dá para testar a regra de dono: logado como um deles, tentar alterar ou excluir outro devolve **403**.
+A aplicação sobe em `http://localhost:8080` com um banco H2 em memória. Os dados são temporários e são apagados quando a aplicação é encerrada. A cada inicialização, a API cria dados de exemplo de games, desenvolvedores, categorias e plataformas. **Nenhum usuário vem cadastrado**: crie a sua conta com dados fictícios em `POST /api/user/v1` (ou em **Minha conta**, no site) e faça login. Para testar a regra de dono, crie duas contas: logado com uma, tentar alterar ou excluir a outra devolve **403**.
 
 Para iniciar com o banco vazio, altere `app.seed.enabled=false` em `src/main/resources/application.properties`.
 
@@ -193,8 +185,8 @@ Content-Type: application/json
 
 ```json
 {
-  "email": "admin@estanteindie.com",
-  "password": "admin123"
+  "email": "jogador.pixel@exemplo.com",
+  "password": "senha123"
 }
 ```
 
@@ -211,7 +203,20 @@ O campo `totalAchievements` não aparece na v1, e um game criado pela v1 começa
 
 ## Endpoints
 
-A base local é `http://localhost:8080`. Nas listagens, use `?page=0&size=10&sort=name,asc` para paginar e ordenar.
+A base local é `http://localhost:8080`.
+
+### Paginação e ordenação
+
+Todas as listagens, buscas e filtros são paginados e aceitam `page`, `size` e `sort` (ex.: `?page=0&size=10&sort=name,asc`).
+
+| Parâmetro | Padrão | Mínimo | Máximo | Observação |
+|---|---|---|---|---|
+| `page` | **0** | **0** | — | A primeira página é a 0. Valor negativo vira 0; página além da última volta vazia. |
+| `size` | **10** | **1** | **100** | Acima de 100, a API devolve 100. Zero ou negativo volta para 10. |
+| `sort` | sem ordenação | — | — | `campo,asc` ou `campo,desc`; dá para repetir. Campo inexistente devolve **400**. |
+
+O padrão vem de `@PageableDefault(size = 10)` nos controllers, e o máximo de `app.pagination.max-page-size=100` (`application.properties`), aplicado pela classe `config/PaginationConfig`.
+
 
 | Recurso | Método | Rota | Descrição | Header |
 |---|---|---|---|---|
