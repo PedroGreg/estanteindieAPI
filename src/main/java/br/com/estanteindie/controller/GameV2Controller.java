@@ -27,7 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "v2 - Games")
+@Tag(name = "Games | v2")
 @RestController
 @RequestMapping("/api/game/v2")
 public class GameV2Controller {
@@ -46,11 +46,11 @@ public class GameV2Controller {
         this.authService = authService;
     }
 
-    @Operation(summary = "Criar um novo game (v2, com conquistas)",
+    @Operation(summary = "Criar um novo game com conquistas | v2",
             description = "Igual ao POST da v1, mas recebe também o totalAchievements (quantidade total de conquistas). " +
-                    "Exige o header X-Idempotency-Key: reenviar com a mesma chave devolve o game já criado (200).")
+                    "Exige o header X-Idempotency-Key: reenviar com a mesma chave devolve 409 (Conflito) e não cria outro registro.")
     @ApiResponse(responseCode = "201", description = "Game criado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = GameV2ResponseDTO.class)))
-    @ApiResponse(responseCode = "200", description = "Repetição: esta X-Idempotency-Key já foi usada, devolve o game criado antes", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = GameV2ResponseDTO.class)))
+    @ApiResponse(responseCode = "409", description = "Repetição: esta X-Idempotency-Key já foi usada. Nada é criado de novo; envie uma chave nova para outro cadastro", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON mal formatado ou header X-Idempotency-Key ausente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "categoryId, developerId ou algum platformId não existe", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
@@ -61,16 +61,13 @@ public class GameV2Controller {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Novo game", required = true,
                     content = @Content(schema = @Schema(implementation = GameV2RequestDTO.class)))
             @RequestBody @Valid GameV2RequestDTO dto) {
-        Long createdId = idempotencyService.findCreatedId("game-v2", idempotencyKey);
-        if (createdId != null) {
-            return ResponseEntity.ok(assembler.toV2Model(service.findById(createdId)));
-        }
+        idempotencyService.checkNotUsed("game-v2", idempotencyKey);
         Game game = service.createV2(dto);
         idempotencyService.register("game-v2", idempotencyKey, game.getId());
         return new ResponseEntity<>(assembler.toV2Model(game), HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Buscar todos os games (v2)", description = "Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar todos os games | v2", description = "Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada no formato v2", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = GameV2ResponseDTO.PAGE_EXAMPLE)))
     @GetMapping()
     public ResponseEntity<PagedModel<EntityModel<GameV2ResponseDTO>>> findAll(@ParameterObject @PageableDefault(size = 10) Pageable pageable) {
@@ -78,7 +75,7 @@ public class GameV2Controller {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toV2Model));
     }
 
-    @Operation(summary = "Buscar game por ID (v2)")
+    @Operation(summary = "Buscar game por ID | v2")
     @ApiResponse(responseCode = "200", description = "Game no formato v2", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = GameV2ResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "ID inválido (não numérico)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "Game não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -87,7 +84,7 @@ public class GameV2Controller {
         return ResponseEntity.ok(assembler.toV2Model(service.findById(id)));
     }
 
-    @Operation(summary = "Atualizar game (v2, com conquistas)",
+    @Operation(summary = "Atualizar game com conquistas | v2",
             description = "Substitui todos os dados do game, inclusive o totalAchievements. Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
     @ApiResponse(responseCode = "200", description = "Game atualizado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = GameV2ResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos ou JSON mal formatado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))

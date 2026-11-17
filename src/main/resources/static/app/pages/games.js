@@ -141,7 +141,7 @@ export async function renderGames(root, ctx) {
         });
     });
     root.querySelector('[data-new-game]').addEventListener('click', () =>
-        openGameForm({ onSaved: game => ctx.navigate(`/games/${game.id}`) }));
+        openGameForm({ onSaved: game => ctx.navigate(game ? `/games/${game.id}` : '/games') }));
 
     fillValues(filtro, valor);
 
@@ -242,7 +242,7 @@ export async function openGameForm({ game = null, onSaved }) {
             } else {
                 const { status, data } = await api.create('/api/game/v2', values, idempotencyKey);
                 invalidateLookups('categories');
-                toast(status === 200 ? 'Este cadastro já tinha sido feito; nada foi duplicado.' : 'Game cadastrado!', status === 200 ? 'warn' : 'success');
+                toast(status === 409 ? 'Este cadastro já tinha sido feito; nada foi duplicado.' : 'Game cadastrado!', status === 409 ? 'warn' : 'success');
                 modal.close();
                 onSaved(data);
             }

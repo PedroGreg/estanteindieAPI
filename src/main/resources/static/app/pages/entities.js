@@ -116,7 +116,7 @@ export async function renderEntities(root, ctx, key) {
             submitLabel: 'Cadastrar',
             onSubmit: async (values, modal) => {
                 const { status } = await api.create(config.v1, values, idempotencyKey);
-                toast(status === 200 ? 'Este cadastro já tinha sido feito; nada foi duplicado.' : `${config.singular[0].toUpperCase()}${config.singular.slice(1)} cadastrad${config.article}!`, status === 200 ? 'warn' : 'success');
+                toast(status === 409 ? 'Este cadastro já tinha sido feito; nada foi duplicado.' : `${config.singular[0].toUpperCase()}${config.singular.slice(1)} cadastrad${config.article}!`, status === 409 ? 'warn' : 'success');
                 modal.close();
                 afterChange();
             }

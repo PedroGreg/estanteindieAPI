@@ -41,7 +41,7 @@ function renderGuest(root, ctx) {
     bindFictional(signupForm);
     attachForm(signupForm, userFields(), async values => {
         const { status } = await api.create('/api/user/v1', values, idempotencyKey);
-        toast(status === 200 ? 'Esta conta já tinha sido criada.' : 'Conta criada! Entrando...', 'success');
+        toast(status === 409 ? 'Esta conta já tinha sido criada.' : 'Conta criada! Entrando...', 'success');
         const login = await api.login(values.email, values.password);
         toast(`Bem-vindo(a), ${login.name}!`, 'success');
         renderAccount(root, ctx);

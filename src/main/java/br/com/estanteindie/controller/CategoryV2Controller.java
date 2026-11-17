@@ -22,7 +22,7 @@ import org.springframework.hateoas.PagedModel;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "v2 - Categorias")
+@Tag(name = "Categorias | v2")
 @RestController
 @RequestMapping("/api/category/v2")
 public class CategoryV2Controller {
@@ -37,7 +37,7 @@ public class CategoryV2Controller {
         this.assembler = assembler;
     }
 
-    @Operation(summary = "Buscar todas as categorias (v2)", description = "Paginação: page, size e sort.")
+    @Operation(summary = "Buscar todas as categorias | v2", description = "Paginação: page, size e sort.")
     @ApiResponse(responseCode = "200", description = "Lista paginada no formato v2", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = CategoryV2ResponseDTO.PAGE_EXAMPLE)))
     @GetMapping()
     public ResponseEntity<PagedModel<EntityModel<CategoryV2ResponseDTO>>> findAll(@ParameterObject @PageableDefault(size = 10) Pageable pageable) {
@@ -46,7 +46,7 @@ public class CategoryV2Controller {
                 category -> assembler.toV2Model(category, service.countGames(category.getId()))));
     }
 
-    @Operation(summary = "Buscar categoria por ID (v2)")
+    @Operation(summary = "Buscar categoria por ID | v2")
     @ApiResponse(responseCode = "200", description = "Categoria no formato v2", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = CategoryV2ResponseDTO.class)))
     @ApiResponse(responseCode = "404", description = "Categoria não encontrada", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @GetMapping("/{id}")

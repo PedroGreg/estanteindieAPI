@@ -67,7 +67,7 @@ export function openUserForm({ user = null, onSaved }) {
                 onSaved(saved, values);
             } else {
                 const { status, data } = await api.create('/api/user/v1', values, idempotencyKey);
-                toast(status === 200 ? 'Este cadastro já tinha sido feito; nada foi duplicado.' : 'Usuário cadastrado!', status === 200 ? 'warn' : 'success');
+                toast(status === 409 ? 'Este cadastro já tinha sido feito; nada foi duplicado.' : 'Usuário cadastrado!', status === 409 ? 'warn' : 'success');
                 current.close();
                 onSaved(data, values);
             }

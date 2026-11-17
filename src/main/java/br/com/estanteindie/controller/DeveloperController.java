@@ -27,7 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "v1 - Desenvolvedores")
+@Tag(name = "Desenvolvedores | v1")
 @RestController
 @RequestMapping("/api/developer/v1")
 public class DeveloperController {
@@ -47,10 +47,10 @@ public class DeveloperController {
         this.authService = authService;
     }
 
-    @Operation(summary = "Criar um novo desenvolvedor",
-            description = "Exige o header X-Idempotency-Key (ex.: um UUID). Reenviar com a mesma chave devolve o desenvolvedor já criado (200) em vez de criar outro.")
+    @Operation(summary = "Criar um novo desenvolvedor | v1",
+            description = "Exige o header X-Idempotency-Key (ex.: um UUID). Reenviar com a mesma chave devolve 409 (Conflito) e não cria outro registro.")
     @ApiResponse(responseCode = "201", description = "Desenvolvedor criado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = DeveloperResponseDTO.class)))
-    @ApiResponse(responseCode = "200", description = "Repetição: esta X-Idempotency-Key já foi usada, devolve o desenvolvedor criado antes", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = DeveloperResponseDTO.class)))
+    @ApiResponse(responseCode = "409", description = "Repetição: esta X-Idempotency-Key já foi usada. Nada é criado de novo; envie uma chave nova para outro cadastro", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON mal formatado ou header X-Idempotency-Key ausente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @PostMapping()
@@ -60,16 +60,13 @@ public class DeveloperController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Novo desenvolvedor", required = true,
                     content = @Content(schema = @Schema(implementation = DeveloperRequestDTO.class)))
             @RequestBody @Valid DeveloperRequestDTO dto){
-        Long createdId = idempotencyService.findCreatedId("developer", idempotencyKey);
-        if (createdId != null) {
-            return ResponseEntity.ok(assembler.toDtoModel(service.findById(createdId)));
-        }
+        idempotencyService.checkNotUsed("developer", idempotencyKey);
         Developer developer1 = service.create(dto);
         idempotencyService.register("developer", idempotencyKey, developer1.getId());
         return new ResponseEntity<>(assembler.toDtoModel(developer1), HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Buscar todos os desenvolvedores", description = "Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar todos os desenvolvedores | v1", description = "Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada com todos os desenvolvedores", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = DeveloperResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @GetMapping()
@@ -78,7 +75,7 @@ public class DeveloperController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Buscar desenvolvedor por ID", description = "Retorna o desenvolvedor com os links HATEOAS para os recursos relacionados.")
+    @Operation(summary = "Buscar desenvolvedor por ID | v1", description = "Retorna o desenvolvedor com os links HATEOAS para os recursos relacionados.")
     @ApiResponse(responseCode = "200", description = "Desenvolvedor encontrado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = DeveloperResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "ID inválido (não numérico)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "Desenvolvedor não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -88,7 +85,7 @@ public class DeveloperController {
         return ResponseEntity.ok(assembler.toDtoModel(service.findById(id)));
     }
 
-    @Operation(summary = "Buscar desenvolvedor por nome", description = "Busca desenvolvedores cujo nome contém o texto, sem diferenciar maiúsculas de minúsculas. Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar desenvolvedor por nome | v1", description = "Busca desenvolvedores cujo nome contém o texto, sem diferenciar maiúsculas de minúsculas. Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada com o resultado", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = DeveloperResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "400", description = "Parâmetro name não enviado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
@@ -100,7 +97,7 @@ public class DeveloperController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Atualizar desenvolvedor",
+    @Operation(summary = "Atualizar desenvolvedor | v1",
             description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
     @ApiResponse(responseCode = "200", description = "Desenvolvedor atualizado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = DeveloperResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos ou JSON mal formatado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -119,7 +116,7 @@ public class DeveloperController {
         return ResponseEntity.ok(assembler.toDtoModel(service.update(id, dto)));
     }
 
-    @Operation(summary = "Deletar desenvolvedor",
+    @Operation(summary = "Deletar desenvolvedor | v1",
             description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
     @ApiResponse(responseCode = "204", description = "Desenvolvedor deletado", content = @Content)
     @ApiResponse(responseCode = "401", description = "X-API-Key ausente ou inválida (faça login em POST /api/auth/login)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))

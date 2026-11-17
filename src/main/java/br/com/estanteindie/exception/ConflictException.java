@@ -9,7 +9,12 @@ package br.com.estanteindie.exception;
 //   - 403 (ForbiddenException):  o pedido está certo, mas você não tem permissão.
 //   - 409 (ConflictException):   o pedido está certo e você tem permissão, mas os dados atuais impedem a operação.
 //
-// Onde é lançada: no UserProfileService.delete(...). Todo perfil que tem dono pertence a uma conta
+// Onde é lançada:
+//   1) No IdempotencyService.checkNotUsed(...), chamado no início de todo POST de cadastro. Se a X-Idempotency-Key
+//      já foi usada para aquele recurso, o cadastro já foi feito antes: a API não cria outro registro e responde 409,
+//      com o id do registro original na mensagem. É o código certo porque o pedido entra em conflito com algo que
+//      já aconteceu (a chave já foi consumida). A garantia da idempotência continua: repetir o POST nunca duplica nada.
+//   2) No UserProfileService.delete(...). Todo perfil que tem dono pertence a uma conta
 // (relação 1:1 com User). Apagar só o perfil deixaria a conta apontando para um registro que não existe,
 // então a API recusa e orienta a excluir a conta, que leva o perfil junto (cascade):
 //

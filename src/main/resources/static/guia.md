@@ -17,7 +17,7 @@ API REST para gerenciar um catálogo de **games indie**: desenvolvedores, catego
 
 ### Testando pelo Swagger
 
-Abra [/swagger-ui/index.html](/swagger-ui/index.html), abra uma seção (ex.: **v1 - Categorias**), escolha um endpoint e clique em **Testar**. Preencha os parâmetros, os headers (`X-Idempotency-Key` nos POST, `X-API-Key` nos PUT e DELETE) e o corpo JSON, e clique em **Executar**. A resposta aparece logo abaixo, com o status e o corpo.
+Abra [/swagger-ui/index.html](/swagger-ui/index.html), abra uma seção (ex.: **Categorias | v1**), escolha um endpoint e clique em **Testar**. Preencha os parâmetros, os headers (`X-Idempotency-Key` nos POST, `X-API-Key` nos PUT e DELETE) e o corpo JSON, e clique em **Executar**. A resposta aparece logo abaixo, com o status e o corpo.
 
 ---
 
@@ -36,7 +36,7 @@ Abra [/swagger-ui/index.html](/swagger-ui/index.html), abra uma seção (ex.: **
 | `X-Rate-Limit-Remaining` | Em toda resposta de `/api/...` | Quantas requisições ainda restam no minuto atual (o limite é de **20 por minuto por IP** e vale só para `/api/...`: abrir o site, o Swagger ou este guia não gasta requisições) |
 | `Retry-After` | Na resposta **429** | Quantos segundos esperar antes de tentar de novo |
 
-**Como funciona a idempotência:** se você reenviar um POST com a **mesma** `X-Idempotency-Key`, a API **não cria outro registro**. Ela devolve o registro criado na primeira vez, com status **200** em vez de 201. Use **uma chave nova para cada cadastro novo**.
+**Como funciona a idempotência:** se você reenviar um POST com a **mesma** `X-Idempotency-Key`, a API **não cria outro registro**. Ela responde **409 (Conflito)**, avisando que a chave já foi usada e qual é o **id** do registro criado na primeira vez. Use **uma chave nova para cada cadastro novo**.
 
 ---
 
@@ -242,6 +242,7 @@ Todos os erros vêm no mesmo formato:
 | **404** | ID que não existe (inclusive `developerId`, `categoryId` ou algum `platformIds` de um game) | Consulte a listagem e use um ID existente |
 | **404** | Rota que não existe ou sem a versão (ex.: `/api/category` sem `/v1`) | Use `/v1` ou `/v2` |
 | **405** | Método que a rota não tem (ex.: `DELETE /api/category/v2/1` ou `DELETE /api/game/v2/1`) | A v2 de categorias é só consulta e a v2 de games não tem DELETE: para isso, use a v1 |
+| **409** | POST com uma `X-Idempotency-Key` **já usada** (o cadastro já tinha sido feito) | Nada foi duplicado. Para um cadastro novo, envie uma chave nova |
 | **409** | Deletar categoria, desenvolvedor ou plataforma que ainda tem games | Delete ou altere os games antes |
 | **409** | Deletar o seu próprio perfil (ele pertence à sua conta) | Exclua a sua conta: o perfil vai junto |
 | **415** | Corpo enviado sem `Content-Type: application/json` | Envie o header |
@@ -249,7 +250,7 @@ Todos os erros vêm no mesmo formato:
 | **500** | Erro inesperado no servidor | Tente de novo; se continuar, verifique o log |
 
 **Cuidados importantes:**
-- ⚠️ **Não reutilize** uma `X-Idempotency-Key` para um cadastro diferente: você vai receber o registro **antigo** (200), e o novo não será criado.
+- ⚠️ **Não reutilize** uma `X-Idempotency-Key` para um cadastro diferente: a API responde **409** e o novo registro **não** é criado.
 - ⚠️ A mesma chave de idempotência usada na v1 e na v2 de games conta como chaves separadas.
 - ⚠️ O banco é **em memória (H2)**: ao reiniciar a API, **tudo volta aos dados de exemplo**, as contas criadas são apagadas e as chaves de login e de idempotência deixam de valer.
 - ⚠️ No máximo **100 itens por página**: para ver mais, navegue pelas páginas (`page=1`, `page=2`...) ou siga o link `next`.

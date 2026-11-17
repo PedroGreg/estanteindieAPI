@@ -15,7 +15,7 @@ import java.util.List;
 public class OpenAPI {
 
     @Bean
-    public io.swagger.v3.oas.models.OpenAPI customOpenAPI(@Value("${springdoc.version:1.0.0}") String appVersion) {
+    public io.swagger.v3.oas.models.OpenAPI customOpenAPI(@Value("${springdoc.version:2.0}") String appVersion) {
         return new io.swagger.v3.oas.models.OpenAPI()
                 .info(new Info()
                         .title("EstanteIndie API")
@@ -34,14 +34,14 @@ public class OpenAPI {
                         .url("/guia.html"))
                 .tags(List.of(
                         new Tag().name("Autenticação").description("Login e logout. O login gera a chave X-API-Key, exigida em todos os PUT e DELETE."),
-                        new Tag().name("v1 - Categorias").description("Categorias (gêneros) dos games."),
-                        new Tag().name("v1 - Desenvolvedores").description("Estúdios ou pessoas que desenvolvem os games."),
-                        new Tag().name("v1 - Plataformas").description("Plataformas onde os games estão disponíveis."),
-                        new Tag().name("v1 - Games").description("Games indie com desenvolvedor, categoria, plataformas e status."),
-                        new Tag().name("v1 - Usuários").description("Usuários. O cadastro cria o perfil junto; a senha é guardada como hash BCrypt e nunca é devolvida."),
-                        new Tag().name("v1 - Perfis de Usuário").description("Perfis (bio) dos usuários. O perfil é criado junto no cadastro do usuário."),
-                        new Tag().name("v2 - Categorias").description("Categorias com a quantidade de games (gamesCount). Só consulta."),
-                        new Tag().name("v2 - Games").description("Games resumidos e com o total de conquistas (totalAchievements). Consulta, cadastro e alteração.")
+                        new Tag().name("Categorias | v1").description("Categorias (gêneros) dos games."),
+                        new Tag().name("Desenvolvedores | v1").description("Estúdios ou pessoas que desenvolvem os games."),
+                        new Tag().name("Plataformas | v1").description("Plataformas onde os games estão disponíveis."),
+                        new Tag().name("Games | v1").description("Games indie com desenvolvedor, categoria, plataformas e status."),
+                        new Tag().name("Usuários | v1").description("Usuários. O cadastro cria o perfil junto; a senha é guardada como hash BCrypt e nunca é devolvida."),
+                        new Tag().name("Perfis de Usuário | v1").description("Perfis (bio) dos usuários. O perfil é criado junto no cadastro do usuário."),
+                        new Tag().name("Categorias | v2").description("Categorias com a quantidade de games (gamesCount). Só consulta."),
+                        new Tag().name("Games | v2").description("Games resumidos e com o total de conquistas (totalAchievements). Consulta, cadastro e alteração.")
                 ));
     }
 }

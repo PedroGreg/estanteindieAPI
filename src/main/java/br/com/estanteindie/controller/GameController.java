@@ -28,7 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "v1 - Games")
+@Tag(name = "Games | v1")
 @RestController
 @RequestMapping("/api/game/v1")
 public class GameController {
@@ -48,10 +48,10 @@ public class GameController {
         this.authService = authService;
     }
 
-    @Operation(summary = "Criar um novo game",
-            description = "Exige o header X-Idempotency-Key (ex.: um UUID). Reenviar com a mesma chave devolve o game já criado (200) em vez de criar outro.")
+    @Operation(summary = "Criar um novo game | v1",
+            description = "Exige o header X-Idempotency-Key (ex.: um UUID). Reenviar com a mesma chave devolve 409 (Conflito) e não cria outro registro.")
     @ApiResponse(responseCode = "201", description = "Game criado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = GameResponseDTO.class)))
-    @ApiResponse(responseCode = "200", description = "Repetição: esta X-Idempotency-Key já foi usada, devolve o game criado antes", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = GameResponseDTO.class)))
+    @ApiResponse(responseCode = "409", description = "Repetição: esta X-Idempotency-Key já foi usada. Nada é criado de novo; envie uma chave nova para outro cadastro", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON mal formatado ou header X-Idempotency-Key ausente", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "categoryId, developerId ou algum platformId não existe", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
@@ -62,16 +62,13 @@ public class GameController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Novo game", required = true,
                     content = @Content(schema = @Schema(implementation = GameRequestDTO.class)))
             @RequestBody @Valid GameRequestDTO dto){
-        Long createdId = idempotencyService.findCreatedId("game", idempotencyKey);
-        if (createdId != null) {
-            return ResponseEntity.ok(assembler.toDtoModel(service.findById(createdId)));
-        }
+        idempotencyService.checkNotUsed("game", idempotencyKey);
         Game game1 = service.create(dto);
         idempotencyService.register("game", idempotencyKey, game1.getId());
         return new ResponseEntity<>(assembler.toDtoModel(game1), HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Buscar todos os games", description = "Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar todos os games | v1", description = "Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada com todos os games", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = GameResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @GetMapping()
@@ -80,7 +77,7 @@ public class GameController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Buscar game por ID", description = "Retorna o game com os links HATEOAS para os recursos relacionados.")
+    @Operation(summary = "Buscar game por ID | v1", description = "Retorna o game com os links HATEOAS para os recursos relacionados.")
     @ApiResponse(responseCode = "200", description = "Game encontrado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = GameResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "ID inválido (não numérico)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "Game não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -90,7 +87,7 @@ public class GameController {
         return ResponseEntity.ok(assembler.toDtoModel(service.findById(id)));
     }
 
-    @Operation(summary = "Buscar game por nome", description = "Busca games cujo nome contém o texto, sem diferenciar maiúsculas de minúsculas. Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar game por nome | v1", description = "Busca games cujo nome contém o texto, sem diferenciar maiúsculas de minúsculas. Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada com o resultado", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = GameResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "400", description = "Parâmetro name não enviado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
@@ -102,7 +99,7 @@ public class GameController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Buscar games por status", description = "Lista os games com o status informado. Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar games por status | v1", description = "Lista os games com o status informado. Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada de games", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = GameResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "400", description = "Parâmetro inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
@@ -114,7 +111,7 @@ public class GameController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Buscar games de um desenvolvedor", description = "Consulta JPQL (One-to-Many). Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar games de um desenvolvedor | v1", description = "Consulta JPQL (One-to-Many). Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada de games", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = GameResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "400", description = "Parâmetro inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "Desenvolvedor não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -127,7 +124,7 @@ public class GameController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Buscar games de uma categoria", description = "Consulta JPQL (One-to-Many). Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar games de uma categoria | v1", description = "Consulta JPQL (One-to-Many). Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada de games", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = GameResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "400", description = "Parâmetro inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "Categoria não encontrada", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -140,7 +137,7 @@ public class GameController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Buscar games de uma plataforma", description = "Consulta JPQL com JOIN (Many-to-Many). Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar games de uma plataforma | v1", description = "Consulta JPQL com JOIN (Many-to-Many). Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada de games", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = GameResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "400", description = "Parâmetro inválido", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "Plataforma não encontrada", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -153,7 +150,7 @@ public class GameController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Atualizar game",
+    @Operation(summary = "Atualizar game | v1",
             description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
     @ApiResponse(responseCode = "200", description = "Game atualizado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = GameResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos ou JSON mal formatado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -172,7 +169,7 @@ public class GameController {
         return ResponseEntity.ok(assembler.toDtoModel(service.update(id, dto)));
     }
 
-    @Operation(summary = "Deletar game",
+    @Operation(summary = "Deletar game | v1",
             description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login.")
     @ApiResponse(responseCode = "204", description = "Game deletado", content = @Content)
     @ApiResponse(responseCode = "401", description = "X-API-Key ausente ou inválida (faça login em POST /api/auth/login)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))

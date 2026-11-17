@@ -27,7 +27,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "v1 - Usuários")
+@Tag(name = "Usuários | v1")
 @RestController
 @RequestMapping("/api/user/v1")
 public class UserController {
@@ -47,10 +47,10 @@ public class UserController {
         this.authService = authService;
     }
 
-    @Operation(summary = "Criar um novo usuário",
-            description = "Exige o header X-Idempotency-Key (ex.: um UUID). Reenviar com a mesma chave devolve o usuário já criado (200) em vez de criar outro.")
+    @Operation(summary = "Criar um novo usuário | v1",
+            description = "Exige o header X-Idempotency-Key (ex.: um UUID). Reenviar com a mesma chave devolve 409 (Conflito) e não cria outro registro.")
     @ApiResponse(responseCode = "201", description = "Usuário criado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = UserResponseDTO.class)))
-    @ApiResponse(responseCode = "200", description = "Repetição: esta X-Idempotency-Key já foi usada, devolve o usuário criado antes", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = UserResponseDTO.class)))
+    @ApiResponse(responseCode = "409", description = "Repetição: esta X-Idempotency-Key já foi usada. Nada é criado de novo; envie uma chave nova para outro cadastro", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos, JSON mal formatado ou header X-Idempotency-Key ausente (ou email já cadastrado)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @PostMapping()
@@ -60,16 +60,13 @@ public class UserController {
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Novo usuário", required = true,
                     content = @Content(schema = @Schema(implementation = UserRequestDTO.class)))
             @RequestBody @Valid UserRequestDTO dto){
-        Long createdId = idempotencyService.findCreatedId("user", idempotencyKey);
-        if (createdId != null) {
-            return ResponseEntity.ok(assembler.toDtoModel(service.findById(createdId)));
-        }
+        idempotencyService.checkNotUsed("user", idempotencyKey);
         User user1 = service.create(dto);
         idempotencyService.register("user", idempotencyKey, user1.getId());
         return new ResponseEntity<>(assembler.toDtoModel(user1), HttpStatus.CREATED);
     }
 
-    @Operation(summary = "Buscar todos os usuários", description = "Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar todos os usuários | v1", description = "Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada com todos os usuários", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = UserResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
     @GetMapping()
@@ -78,7 +75,7 @@ public class UserController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Buscar usuário por ID", description = "Retorna o usuário com os links HATEOAS para os recursos relacionados.")
+    @Operation(summary = "Buscar usuário por ID | v1", description = "Retorna o usuário com os links HATEOAS para os recursos relacionados.")
     @ApiResponse(responseCode = "200", description = "Usuário encontrado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = UserResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "ID inválido (não numérico)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -88,7 +85,7 @@ public class UserController {
         return ResponseEntity.ok(assembler.toDtoModel(service.findById(id)));
     }
 
-    @Operation(summary = "Buscar usuário por nome", description = "Busca usuários cujo nome contém o texto, sem diferenciar maiúsculas de minúsculas. Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
+    @Operation(summary = "Buscar usuário por nome | v1", description = "Busca usuários cujo nome contém o texto, sem diferenciar maiúsculas de minúsculas. Paginação: page (começa em 0), size (padrão 10) e sort (ex.: name,asc).")
     @ApiResponse(responseCode = "200", description = "Lista paginada com o resultado", content = @Content(mediaType = "application/hal+json", schema = @Schema(type = "object", example = UserResponseDTO.PAGE_EXAMPLE)))
     @ApiResponse(responseCode = "400", description = "Parâmetro name não enviado", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
     @ApiResponse(responseCode = "429", description = "Limite de 20 requisições por minuto excedido; aguarde os segundos do header Retry-After", content = @Content(mediaType = "application/json", schema = @Schema(type = "object", example = "{\"error\":\"Muitas requisições. Tente novamente em 30s\"}")))
@@ -100,7 +97,7 @@ public class UserController {
         return ResponseEntity.ok(pagedAssembler.toModel(page, assembler::toDtoModel));
     }
 
-    @Operation(summary = "Atualizar usuário",
+    @Operation(summary = "Atualizar usuário | v1",
             description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login. Cada usuário só pode alterar a própria conta.")
     @ApiResponse(responseCode = "200", description = "Usuário atualizado", content = @Content(mediaType = "application/hal+json", schema = @Schema(implementation = UserResponseDTO.class)))
     @ApiResponse(responseCode = "400", description = "Dados inválidos ou JSON mal formatado (ou email já cadastrado)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))
@@ -119,7 +116,7 @@ public class UserController {
         return ResponseEntity.ok(assembler.toDtoModel(service.update(id, dto, currentUserId)));
     }
 
-    @Operation(summary = "Deletar usuário",
+    @Operation(summary = "Deletar usuário | v1",
             description = "Exige login: envie no header X-API-Key a chave obtida em POST /api/auth/login. Cada usuário só pode excluir a própria conta (o perfil é apagado junto).")
     @ApiResponse(responseCode = "204", description = "Usuário deletado", content = @Content)
     @ApiResponse(responseCode = "401", description = "X-API-Key ausente ou inválida (faça login em POST /api/auth/login)", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ExceptionResponseModel.class)))

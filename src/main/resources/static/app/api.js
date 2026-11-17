@@ -120,7 +120,11 @@ export function query(params) {
 
 export const api = {
     get: path => request('GET', path).then(result => result.data),
-    create: (path, body, idempotencyKey) => request('POST', path, { body, idempotencyKey }),
+    create: (path, body, idempotencyKey) => request('POST', path, { body, idempotencyKey })
+        .catch(error => {
+            if (error.status === 409) return { status: 409, data: null };
+            throw error;
+        }),
     update: (path, body) => request('PUT', path, { body, authenticated: true }).then(result => result.data),
     remove: path => request('DELETE', path, { authenticated: true }),
     async login(email, password) {

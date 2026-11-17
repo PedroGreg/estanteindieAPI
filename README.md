@@ -174,7 +174,7 @@ A página do Swagger usa o tema do projeto. O arquivo fica em `src/main/resource
 
 **Permissões:** qualquer usuário logado pode alterar e excluir games, categorias, desenvolvedores e plataformas. Contas e perfis são pessoais: cada usuário só altera e exclui a própria conta e o próprio perfil; nos dos outros (e em perfis avulsos), a resposta é `403 Forbidden`.
 
-**Idempotência:** envie um valor único (por exemplo, um UUID) em `X-Idempotency-Key` a cada cadastro. Se o mesmo POST for reenviado com a mesma chave, a API não cria outro registro: devolve o já criado, com `200 OK`. Use uma chave nova para cada cadastro novo.
+**Idempotência:** envie um valor único (por exemplo, um UUID) em `X-Idempotency-Key` a cada cadastro. Se o mesmo POST for reenviado com a mesma chave, a API não cria outro registro: responde `409 Conflict`, com o id do registro criado na primeira vez. Use uma chave nova para cada cadastro novo.
 
 ### Exemplo: login
 
@@ -340,7 +340,7 @@ Campos obrigatórios e regras de formato são validados pela API. Todos os erros
 
 ## Códigos HTTP
 
-- `200 OK`: consulta e atualização bem-sucedidas, login e reenvio de um POST com a mesma `X-Idempotency-Key`.
+- `200 OK`: consulta e atualização bem-sucedidas e login.
 - `201 Created`: cadastro criado com sucesso.
 - `204 No Content`: remoção ou logout executado com sucesso.
 - `400 Bad Request`: dados inválidos, JSON mal formatado, e-mail já cadastrado, ID não numérico, parâmetro de busca ausente ou header `X-Idempotency-Key` ausente.
@@ -348,7 +348,7 @@ Campos obrigatórios e regras de formato são validados pela API. Todos os erros
 - `403 Forbidden`: chave válida, mas tentando alterar ou excluir a conta ou o perfil de outro usuário (ou um perfil avulso).
 - `404 Not Found`: registro ou rota inexistente, inclusive `developerId`, `categoryId` ou `platformIds` de um game.
 - `405 Method Not Allowed`: método não disponível na rota (ex.: `DELETE /api/category/v2/{id}`).
-- `409 Conflict`: remoção de um registro em uso (ex.: categoria, desenvolvedor ou plataforma que ainda têm games, ou o próprio perfil, que pertence à conta).
+- `409 Conflict`: reenvio de um POST com uma `X-Idempotency-Key` já usada (nada é duplicado), ou remoção de um registro em uso (ex.: categoria, desenvolvedor ou plataforma que ainda têm games, ou o próprio perfil, que pertence à conta).
 - `415 Unsupported Media Type`: corpo enviado sem `Content-Type: application/json`.
 - `429 Too Many Requests`: mais de 20 requisições por minuto do mesmo IP; o header `Retry-After` informa quantos segundos esperar.
 - `500 Internal Server Error`: erro inesperado no servidor.

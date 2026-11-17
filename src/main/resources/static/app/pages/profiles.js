@@ -44,7 +44,7 @@ export async function renderProfiles(root, ctx) {
             submitLabel: 'Cadastrar',
             onSubmit: async (values, modal) => {
                 const { status } = await api.create('/api/userprofile/v1', { bio: values.bio }, idempotencyKey);
-                toast(status === 200 ? 'Este cadastro já tinha sido feito; nada foi duplicado.' : 'Perfil cadastrado!', status === 200 ? 'warn' : 'success');
+                toast(status === 409 ? 'Este cadastro já tinha sido feito; nada foi duplicado.' : 'Perfil cadastrado!', status === 409 ? 'warn' : 'success');
                 modal.close();
                 ctx.refresh();
             }
