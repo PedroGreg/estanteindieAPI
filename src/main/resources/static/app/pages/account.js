@@ -18,7 +18,7 @@ function renderGuest(root, ctx) {
         <div class="grid grid-2">
             <article class="card">
                 <h2 class="section-title">Entrar</h2>
-                <p class="muted">Conta de teste: <strong>admin@indiegames.com</strong> / <strong>admin123</strong></p>
+                <p class="muted">Conta de teste: <strong>admin@estanteindie.com</strong> / <strong>admin123</strong></p>
                 <div data-login>${formMarkup({ fields: LOGIN_FIELDS, submitLabel: 'Entrar', cancel: false })}</div>
             </article>
             <article class="card">

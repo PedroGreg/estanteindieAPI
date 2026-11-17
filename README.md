@@ -1,4 +1,4 @@
-# Indie Games API — API de gerenciamento de games indie
+# EstanteIndie API — API de gerenciamento de games indie
 
 API REST desenvolvida com Spring Boot para administrar um catálogo de games indie: desenvolvedores, categorias, plataformas, games, usuários e perfis. O projeto oferece cadastro, consulta, atualização e remoção, com paginação, HATEOAS, versionamento, login por chave de API, idempotência, limite de requisições e documentação interativa com Swagger.
 
@@ -77,20 +77,25 @@ Na raiz do projeto, execute:
 ./mvnw spring-boot:run
 ```
 
-A aplicação sobe em `http://localhost:8080` com um banco H2 em memória. Os dados são temporários e são apagados quando a aplicação é encerrada. A cada inicialização, a API cria dados de exemplo e o usuário de teste:
+A aplicação sobe em `http://localhost:8080` com um banco H2 em memória. Os dados são temporários e são apagados quando a aplicação é encerrada. A cada inicialização, a API cria dados de exemplo e três usuários de teste:
 
-- **E-mail:** `admin@indiegames.com`
-- **Senha:** `admin123`
+| Nome | E-mail | Senha |
+|---|---|---|
+| Administrador | `admin@estanteindie.com` | `admin123` |
+| Marina Pixel | `marina@estanteindie.com` | `senha123` |
+| Caio Retrô | `caio@estanteindie.com` | `senha123` |
+
+Com mais de um usuário dá para testar a regra de dono: logado como um deles, tentar alterar ou excluir outro devolve **403**.
 
 Para iniciar com o banco vazio, altere `app.seed.enabled=false` em `src/main/resources/application.properties`.
 
-O console H2 fica disponível em [http://localhost:8080/h2-console](http://localhost:8080/h2-console), com a JDBC URL `jdbc:h2:mem:indiegames`, o usuário `sa` e a senha em branco.
+O console H2 fica disponível em [http://localhost:8080/h2-console](http://localhost:8080/h2-console), com a JDBC URL `jdbc:h2:mem:estanteindie`, o usuário `sa` e a senha em branco.
 
 ### Empacotar e executar
 
 ```bash
 ./mvnw clean package
-java -jar target/IndieGamesApi-0.0.1-SNAPSHOT.jar
+java -jar target/EstanteIndie-0.0.1-SNAPSHOT.jar
 ```
 
 No Windows, use `mvnw.cmd` no lugar de `./mvnw`.
@@ -98,8 +103,8 @@ No Windows, use `mvnw.cmd` no lugar de `./mvnw`.
 ### Docker
 
 ```bash
-docker build -t indie-games-api .
-docker run -p 8080:8080 indie-games-api
+docker build -t estanteindie-api .
+docker run -p 8080:8080 estanteindie-api
 ```
 
 A porta pode ser trocada pela variável de ambiente `PORT`.
@@ -120,11 +125,11 @@ Com a aplicação em execução, acesse [http://localhost:8080/](http://localhos
 | Categorias | `/#/categorias` | Listar com a quantidade de games, buscar, cadastrar, editar, excluir e ver os games da categoria |
 | Desenvolvedores | `/#/desenvolvedores` | Listar, buscar, cadastrar, editar, excluir e ver os games do desenvolvedor |
 | Plataformas | `/#/plataformas` | Listar, buscar, cadastrar, editar, excluir e ver os games da plataforma |
-| Usuários _(oculta)_ | `/#/usuarios` | Listar, buscar, cadastrar, editar e excluir a própria conta e ver o perfil |
-| Perfis _(oculta)_ | `/#/perfis` | Listar, buscar pela bio, cadastrar perfil avulso, editar e excluir o próprio perfil |
+| Usuários | `/#/usuarios` | Listar, buscar, cadastrar, editar e excluir a própria conta e ver o perfil |
+| Perfis | `/#/perfis` | Listar, buscar pela bio, cadastrar perfil avulso, editar e excluir o próprio perfil |
 | Minha conta | `/#/conta` | Entrar, criar conta, ver e editar os próprios dados, copiar a chave X-API-Key, sair e excluir a conta |
 
-As telas de **Usuários** e **Perfis** estão ocultas: os links não aparecem no menu e os endereços mostram "página não encontrada". O código continua em `pages/users.js` e `pages/profiles.js`; para reativar, remova o atributo `hidden` dos links no `index.html` e o `hidden: true` das rotas no `app/main.js`. O cadastro de conta e a edição dos próprios dados continuam disponíveis em **Minha conta**.
+Nas telas de **Usuários** e **Perfis** todos podem consultar a lista, mas os botões **Editar** e **Excluir** só aparecem na linha do usuário logado. A API garante a mesma regra: alterar ou excluir a conta ou o perfil de outra pessoa devolve **403**.
 
 O front-end cuida sozinho dos headers da API:
 - gera uma `X-Idempotency-Key` nova para cada formulário de cadastro (reenviar o mesmo formulário não duplica o registro);
@@ -153,7 +158,7 @@ src/main/resources/static/
 
 Com a aplicação em execução, acesse:
 
-- Swagger UI (visual padrão, com o cabeçalho e o logo do projeto): [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
+- Swagger UI (com o tema do projeto): [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 - Especificação OpenAPI em JSON: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 - Guia de uso (exemplos e lista de erros): [http://localhost:8080/guia.html](http://localhost:8080/guia.html)
 - Termos de Serviço: [http://localhost:8080/termos.html](http://localhost:8080/termos.html)
@@ -161,7 +166,7 @@ Com a aplicação em execução, acesse:
 
 No Swagger, abra uma seção, escolha um endpoint, clique em **Testar**, preencha os parâmetros, os headers e o corpo JSON quando necessário e clique em **Executar**. Os IDs dos registros são números inteiros.
 
-A página do Swagger mantém o visual padrão do Swagger UI, com o cabeçalho e o logo do projeto no topo. O arquivo fica em `src/main/resources/static/swagger-ui/index.html` e é entregue no endereço padrão pelo `SwaggerPageController`; os arquivos do Swagger UI (CSS e JavaScript) continuam vindo do springdoc. O texto completo do guia fica em `src/main/resources/static/guia.md`.
+A página do Swagger usa o tema do projeto. O arquivo fica em `src/main/resources/static/swagger-ui/index.html` e é entregue no endereço padrão pelo `SwaggerPageController`; os arquivos do Swagger UI (CSS e JavaScript) continuam vindo do springdoc. O texto completo do guia fica em `src/main/resources/static/guia.md`.
 
 > Use sempre **dados fictícios** nos testes (ex.: nome `Jogador Pixel` e e-mail `jogador.pixel@exemplo.com`). Não cadastre nome, e-mail ou senha reais.
 
@@ -188,7 +193,7 @@ Content-Type: application/json
 
 ```json
 {
-  "email": "admin@indiegames.com",
+  "email": "admin@estanteindie.com",
   "password": "admin123"
 }
 ```

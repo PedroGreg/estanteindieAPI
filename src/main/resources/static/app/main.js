@@ -17,8 +17,8 @@ const routes = [
     { pattern: /^\/categorias$/, nav: 'categorias', title: 'Categorias', render: (root, ctx) => renderEntities(root, ctx, 'categorias') },
     { pattern: /^\/desenvolvedores$/, nav: 'desenvolvedores', title: 'Desenvolvedores', render: (root, ctx) => renderEntities(root, ctx, 'desenvolvedores') },
     { pattern: /^\/plataformas$/, nav: 'plataformas', title: 'Plataformas', render: (root, ctx) => renderEntities(root, ctx, 'plataformas') },
-    { pattern: /^\/usuarios$/, nav: 'usuarios', title: 'Usuários', render: renderUsers, hidden: true },
-    { pattern: /^\/perfis$/, nav: 'perfis', title: 'Perfis', render: renderProfiles, hidden: true },
+    { pattern: /^\/usuarios$/, nav: 'usuarios', title: 'Usuários', render: renderUsers },
+    { pattern: /^\/perfis$/, nav: 'perfis', title: 'Perfis', render: renderProfiles },
     { pattern: /^\/conta$/, nav: 'conta', title: 'Minha conta', render: renderAccount }
 ];
 
@@ -59,14 +59,14 @@ async function render() {
 
     if (!route || route.hidden) {
         setActiveNav('');
-        document.title = 'Página não encontrada · Indie Games';
+        document.title = 'Página não encontrada · EstanteIndie';
         view.innerHTML = `<section class="page"><div class="state"><p class="state-title">Página não encontrada</p>
             <p>O endereço <code>${esc(path)}</code> não existe.</p><a class="btn btn-primary" href="#/">Voltar ao início</a></div></section>`;
         return;
     }
 
     setActiveNav(route.nav);
-    document.title = `${route.title} · Indie Games`;
+    document.title = `${route.title} · EstanteIndie`;
     const ctx = {
         params,
         match: path.match(route.pattern),

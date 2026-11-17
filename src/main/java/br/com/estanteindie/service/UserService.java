@@ -1,0 +1,104 @@
+package br.com.estanteindie.service;
+
+import br.com.estanteindie.dto.request.UserRequestDTO;
+import br.com.estanteindie.exception.BadRequestException;
+import br.com.estanteindie.exception.ForbiddenException;
+import br.com.estanteindie.exception.NotFoundException;
+import br.com.estanteindie.model.User;
+import br.com.estanteindie.model.UserProfile;
+import br.com.estanteindie.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+@Service
+public class UserService {
+
+    private final UserRepository repository;
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository repository, PasswordEncoder passwordEncoder){
+        this.repository = repository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    public Page<User> findAll(Pageable pageable){
+        return repository.findAll(pageable);
+    }
+
+    public User findById(Long id){
+        return repository.findById(id).orElseThrow(() -> new NotFoundException("Usuário não encontrado, ID: " + id));
+    }
+
+    @Transactional
+    public User create(UserRequestDTO dto){
+        validateEmail(dto.email(), null);
+        if (dto.password() == null || dto.password().isBlank()) {
+            throw new BadRequestException("password: A password é obrigatória no cadastro");
+        }
+        User user = new User();
+        user.setName(dto.name());
+        user.setEmail(dto.email());
+        user.setPassword(passwordEncoder.encode(dto.password()));
+        user.setCreatedAt(LocalDateTime.now());
+
+        UserProfile profile = new UserProfile();
+        profile.setBio(dto.bio() != null ? dto.bio() : "");
+        profile.setUser(user);
+        profile.setCreatedAt(LocalDateTime.now());
+        user.setUserProfile(profile);
+        return repository.save(user);
+    }
+
+    @Transactional
+    public User update(Long id, UserRequestDTO dto, Long currentUserId){
+        User updateUser = findById(id);
+        checkOwner(updateUser, currentUserId);
+        validateEmail(dto.email(), id);
+        updateUser.setName(dto.name());
+        updateUser.setEmail(dto.email());
+        if (dto.password() != null && !dto.password().isBlank()){
+            updateUser.setPassword(passwordEncoder.encode(dto.password()));
+        }
+        if (dto.bio() != null){
+            UserProfile profile = updateUser.getUserProfile();
+            if (profile == null){
+                profile = new UserProfile();
+                profile.setCreatedAt(LocalDateTime.now());
+                profile.setUser(updateUser);
+                updateUser.setUserProfile(profile);
+            }
+            profile.setBio(dto.bio());
+            profile.setUpdatedAt(LocalDateTime.now());
+        }
+        updateUser.setUpdatedAt(LocalDateTime.now());
+        return updateUser;
+    }
+
+    public Page<User> findByName(String name, Pageable pageable){
+        return repository.findByNameContainingIgnoreCase(name, pageable);
+    }
+
+    @Transactional
+    public void delete(Long id, Long currentUserId){
+        User user = findById(id);
+        checkOwner(user, currentUserId);
+        repository.delete(user);
+    }
+
+    private void checkOwner(User user, Long currentUserId){
+        if (!user.getId().equals(currentUserId)) {
+            throw new ForbiddenException("Você só pode alterar ou excluir a sua própria conta");
+        }
+    }
+
+    private void validateEmail(String email, Long currentUserId){
+        repository.findByEmailIgnoreCase(email)
+                .filter(existing -> !existing.getId().equals(currentUserId))
+                .ifPresent(existing -> { throw new BadRequestException("email: Email já cadastrado: " + email); });
+    }
+}

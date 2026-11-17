@@ -272,7 +272,7 @@ export function loginModal({ reason = 'Faça login para continuar.' } = {}) {
         let done = false;
         const modal = formModal({
             title: 'Entrar',
-            intro: `<p>${esc(reason)}</p><p class="muted">Conta de teste: <strong>admin@indiegames.com</strong> / <strong>admin123</strong>. Ainda não tem conta? <a href="#/conta" data-go-signup>Crie uma com dados fictícios</a>.</p>`,
+            intro: `<p>${esc(reason)}</p><p class="muted">Conta de teste: <strong>admin@estanteindie.com</strong> / <strong>admin123</strong>. Ainda não tem conta? <a href="#/conta" data-go-signup>Crie uma com dados fictícios</a>.</p>`,
             fields: [
                 { name: 'email', label: 'E-mail', type: 'email', required: true, autocomplete: 'username' },
                 { name: 'password', label: 'Senha', type: 'password', required: true, autocomplete: 'current-password', trim: false }

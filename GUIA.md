@@ -1,13 +1,13 @@
-# Indie Games API — mapa do projeto
+# EstanteIndie API — mapa do projeto
 
 Com a API rodando:
 - **Front-end do usuário:** http://localhost:8080/ (catálogo, cadastros, edição, exclusão, login e conta)
-- **Swagger (visual padrão, com o cabeçalho do projeto):** http://localhost:8080/swagger-ui/index.html
+- **Swagger (com o tema do projeto):** http://localhost:8080/swagger-ui/index.html
 - **Guia de uso** (exemplos, erros e regras): http://localhost:8080/guia.html
 - **Termos de Serviço:** http://localhost:8080/termos.html
-- **Console do H2:** http://localhost:8080/h2-console (JDBC `jdbc:h2:mem:indiegames`, usuário `sa`, sem senha)
+- **Console do H2:** http://localhost:8080/h2-console (JDBC `jdbc:h2:mem:estanteindie`, usuário `sa`, sem senha)
 
-Usuário de teste: **admin@indiegames.com / admin123**
+Usuários de teste: **admin@estanteindie.com / admin123**, **marina@estanteindie.com / senha123** e **caio@estanteindie.com / senha123**
 
 | Requisito | Onde olhar |
 |---|---|
@@ -25,4 +25,4 @@ Usuário de teste: **admin@indiegames.com / admin123**
 | Versionamento (URL) | `/api/{recurso}/v1` e `/api/category/v2`, `/api/game/v2` |
 | Tratamento de erros | pasta `exception/` (comentada em detalhes) |
 | Front-end | `static/index.html` + `static/app/` (`main.js`, `api.js`, `ui.js`, `pages/`) |
-| Documentação | `config/OpenAPI` (especificação), `static/swagger-ui/index.html` + `controller/SwaggerPageController` (página do Swagger com o cabeçalho do projeto), `static/guia.md` (texto do guia), `static/termos.html` |
+| Documentação | `config/OpenAPI` (especificação), `static/swagger-ui/index.html` + `controller/SwaggerPageController` (página do Swagger com o tema), `static/guia.md` (texto do guia), `static/termos.html` |

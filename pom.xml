@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>br.com</groupId>
-    <artifactId>IndieGamesApi</artifactId>
+    <artifactId>EstanteIndie</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>IndieGamesApi</name>
-    <description>IndieGamesApi</description>
+    <name>EstanteIndie</name>
+    <description>EstanteIndie - API REST de catálogo de games indie</description>
     <url/>
     <licenses>
         <license/>

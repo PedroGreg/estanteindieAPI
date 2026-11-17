@@ -1,0 +1,39 @@
+package br.com.estanteindie.assembler;
+
+import br.com.estanteindie.controller.DeveloperController;
+import br.com.estanteindie.controller.GameController;
+import br.com.estanteindie.dto.response.DeveloperResponseDTO;
+import br.com.estanteindie.model.Developer;
+import org.springframework.data.domain.Pageable;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.RepresentationModelAssembler;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+
+@Component
+public class DeveloperModelAssembler implements RepresentationModelAssembler<Developer, EntityModel<Developer>> {
+    public EntityModel<Developer> toModel(Developer developer){
+        return EntityModel.of(developer, links(developer));
+    }
+
+    public EntityModel<DeveloperResponseDTO> toDtoModel(Developer developer){
+        return EntityModel.of(new DeveloperResponseDTO(developer), links(developer));
+    }
+
+    private List<Link> links(Developer developer){
+        List<Link> links = new ArrayList<>();
+        links.add(linkTo(methodOn(DeveloperController.class).findAll(Pageable.unpaged())).withRel("developers").withType("GET"));
+        links.add(linkTo(methodOn(DeveloperController.class).findById(developer.getId())).withSelfRel().withType("GET"));
+        links.add(linkTo(methodOn(DeveloperController.class).findByName(developer.getName(), Pageable.unpaged())).withRel("find-by-name").withType("GET"));
+        links.add(linkTo(methodOn(DeveloperController.class).create(null, null)).withRel("create").withType("POST"));
+        links.add(linkTo(methodOn(DeveloperController.class).update(developer.getId(), null, null)).withRel("update").withType("PUT"));
+        links.add(linkTo(methodOn(DeveloperController.class).delete(developer.getId(), null)).withRel("delete").withType("DELETE"));
+        links.add(linkTo(methodOn(GameController.class).findByDeveloper(developer.getId(), Pageable.unpaged())).withRel("games").withType("GET"));
+        return links;
+    }
+}

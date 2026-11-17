@@ -13,7 +13,7 @@ API REST para gerenciar um catálogo de **games indie**: desenvolvedores, catego
 3. **Use a chave** no header `X-API-Key` sempre que for **alterar (PUT)** ou **deletar (DELETE)** algo.
 4. Em todo **cadastro (POST)**, envie o header `X-Idempotency-Key` com um valor único (ex.: um UUID novo).
 
-> 💡 Já existe um usuário de teste: **admin@indiegames.com** / **admin123**.
+> 💡 Já existe um usuário de teste: **admin@estanteindie.com** / **admin123**.
 
 ### Testando pelo Swagger
 
