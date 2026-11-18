@@ -212,6 +212,136 @@ As buscas procuram por **parte do texto** e **não diferenciam maiúsculas de mi
 
 ---
 
+## 📬 Todos os códigos de resposta
+
+A API usa **3 códigos de sucesso** (2xx) e **9 códigos de erro** (4xx e 5xx). Ela não usa códigos 1xx (informativos) nem 3xx (redirecionamento).
+
+| Código | Nome | Quando aparece | Exemplo |
+|---|---|---|---|
+| **200** | OK | Consulta (GET), atualização (PUT) e login | `GET /api/category/v1/1` |
+| **201** | Created | Cadastro feito (POST) | `POST /api/category/v1` |
+| **204** | No Content | Exclusão (DELETE) e logout. A resposta **não tem corpo** | `DELETE /api/category/v1/3` |
+| **400** | Bad Request | Dados inválidos, JSON mal formatado, header ou parâmetro ausente, ID não numérico | `POST /api/category/v1` com `"name": "AB"` |
+| **401** | Unauthorized | PUT ou DELETE sem `X-API-Key` válida, ou login errado | `DELETE /api/category/v1/1` sem `X-API-Key` |
+| **403** | Forbidden | Alterar ou excluir a conta ou o perfil de **outro** usuário | `DELETE /api/user/v1/2` logado como o usuário 1 |
+| **404** | Not Found | ID que não existe, ou rota que não existe | `GET /api/category/v1/99` |
+| **405** | Method Not Allowed | Método que a rota não tem | `DELETE /api/category/v2/1` |
+| **409** | Conflict | `X-Idempotency-Key` já usada, ou excluir um registro em uso | `DELETE /api/category/v1/1` (categoria com games) |
+| **415** | Unsupported Media Type | Corpo enviado sem `Content-Type: application/json` | `POST /api/category/v1` com `Content-Type: text/plain` |
+| **429** | Too Many Requests | Mais de 20 requisições por minuto vindas do mesmo IP | A 21ª requisição dentro do mesmo minuto |
+| **500** | Internal Server Error | Erro inesperado no servidor | Não deve acontecer no uso normal |
+
+### ✅ Sucesso (2xx)
+
+**200 OK**: consultar uma categoria (os `_links` estão resumidos).
+
+`GET /api/category/v1/1`
+```json
+{
+  "id": 1,
+  "name": "RPG",
+  "createdAt": "2026-11-06T15:45:00",
+  "updatedAt": null,
+  "_links": {
+    "self": { "href": "http://localhost:8080/api/category/v1/1", "type": "GET" },
+    "update": { "href": "http://localhost:8080/api/category/v1/1", "type": "PUT" },
+    "delete": { "href": "http://localhost:8080/api/category/v1/1", "type": "DELETE" }
+  }
+}
+```
+Também devolvem **200**: as listagens paginadas (`GET /api/category/v1`, com `_embedded`, `_links` e `page`), o `PUT` (devolve o registro já alterado) e o `POST /api/auth/login`:
+```json
+{
+  "apiKey": "9b1c2f4e-6a7d-4c3b-8e2f-0a1b2c3d4e5f",
+  "userId": 1,
+  "name": "Jogador Pixel",
+  "email": "jogador.pixel@exemplo.com",
+  "message": "Logado. Envie a apiKey no header X-API-Key para usar os PUT e DELETE."
+}
+```
+
+**201 Created**: cadastrar uma categoria.
+
+`POST /api/category/v1` com o header `X-Idempotency-Key: 5d6f0c8a-2b1e-4f7a-9c3d-8e4b2a1f6c09` e o corpo `{ "name": "Plataforma 2D" }`
+```json
+{
+  "id": 4,
+  "name": "Plataforma 2D",
+  "createdAt": "2026-11-17T21:30:00",
+  "updatedAt": null,
+  "_links": {
+    "self": { "href": "http://localhost:8080/api/category/v1/4", "type": "GET" }
+  }
+}
+```
+A resposta traz o registro criado, já com o `id` gerado pela API (os `_links` estão resumidos).
+
+**204 No Content**: excluir uma categoria sem games.
+
+`DELETE /api/category/v1/4` com o header `X-API-Key: 9b1c2f4e-6a7d-4c3b-8e2f-0a1b2c3d4e5f`
+
+A resposta vem **sem corpo**: o 204 já confirma que a exclusão foi feita. O `POST /api/auth/logout` também devolve 204.
+
+### ⛔ Erros (4xx e 5xx)
+
+Todos os erros têm o mesmo formato, com `timestamp`, `message` e `details`. A única exceção é o **429**, que vem do filtro de limite de requisições e usa o campo `error`.
+
+**400 Bad Request**: `POST /api/category/v1` com `{ "name": "AB" }`
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "name: O name da categoria deve ter entre 3 e 255 caracteres", "details": "uri=/api/category/v1" }
+```
+
+**401 Unauthorized**: `DELETE /api/category/v1/1` sem o header `X-API-Key` (num PUT, o corpo é validado antes: com corpo inválido, o erro é 400)
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "Esta operação exige login: envie o header X-API-Key (obtenha a chave em POST /api/auth/login)", "details": "uri=/api/category/v1/1" }
+```
+
+**403 Forbidden**: `DELETE /api/user/v1/2` com a `X-API-Key` do usuário 1
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "Você só pode alterar ou excluir a sua própria conta", "details": "uri=/api/user/v1/2" }
+```
+
+**404 Not Found**: `GET /api/category/v1/99`
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "Categoria não encontrada, ID: 99", "details": "uri=/api/category/v1/99" }
+```
+Uma rota que não existe (ex.: `GET /api/categoria`) também dá 404, com a mensagem "Rota não encontrada: confira o endereço e a versão (/v1 ou /v2)".
+
+**405 Method Not Allowed**: `DELETE /api/category/v2/1` (a v2 de categorias só tem consulta)
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "O método DELETE não é suportado nesta rota", "details": "uri=/api/category/v2/1" }
+```
+
+**409 Conflict**: dois casos.
+
+1. Reenviar um `POST /api/category/v1` com uma `X-Idempotency-Key` já usada:
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "Esta X-Idempotency-Key já foi usada: o registro já foi criado (id 4) e nada foi duplicado. Para um cadastro novo, envie uma chave nova", "details": "uri=/api/category/v1" }
+```
+2. `DELETE /api/category/v1/1`, sendo que a categoria ainda tem games:
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "O registro está em uso por outro recurso (ou já existe) e a operação não pode ser feita", "details": "uri=/api/category/v1/1" }
+```
+
+**415 Unsupported Media Type**: `POST /api/category/v1` com o header `Content-Type: text/plain`
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "Content-Type não suportado: envie o corpo como application/json", "details": "uri=/api/category/v1" }
+```
+
+**429 Too Many Requests**: a 21ª requisição dentro do mesmo minuto
+```json
+{ "error": "Muitas requisições. Tente novamente em 42s" }
+```
+A resposta também traz o header `Retry-After: 42`, com os segundos que faltam para liberar.
+
+**500 Internal Server Error**: erro inesperado
+```json
+{ "timestamp": "2026-11-17T21:30:00.000+00:00", "message": "Erro interno no servidor, tente novamente mais tarde", "details": "uri=/api/..." }
+```
+A mensagem é genérica de propósito: o detalhe técnico fica só no log do servidor, para não expor informações internas.
+
+---
+
 ## ⛔ O que NÃO pode (e o erro que você recebe)
 
 Todos os erros vêm no mesmo formato:
